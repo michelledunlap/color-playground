@@ -44,7 +44,11 @@
 
         #hud {
             position: fixed; top: 20px; right: 20px; text-align: right;
-            pointer-events: none; color: rgba(255,255,255,0.7); z-index: 10;
+            pointer-events: none; 
+            color: rgba(255,255,255,0.8); /* Default start color */
+            z-index: 10;
+            font-weight: bold;
+            transition: color 0.2s; /* Smooth transition between black/white */
         }
 
         /* --- HELP MODAL --- */
@@ -88,7 +92,6 @@
         }
         .stamp.pop { transform: translate(-50%, -50%) scale(1.5); }
         
-        /* SELECTION: White + Black Double Border for High Contrast */
         .stamp.selected {
             border: 2px solid white;
             box-shadow: 0 0 0 2px black, 0 0 15px rgba(255,255,255,0.5);
@@ -121,7 +124,7 @@
                 <li><span class="key">Ctrl</span> + <span class="key">A</span> : Select All</li>
                 <li><span class="key">Del</span> : Delete Selected</li>
             </ul>
-            <p><strong>Commands:</strong> Type <span class="key">export</span>, <span class="key">missed</span>, or vibes like <span class="key">patriotic</span>, <span class="key">yay</span>, or <span class="key">reef</span>.</p>
+            <p><strong>Commands:</strong> Type <span class="key">export</span>, <span class="key">missed</span>, or vibes like <span class="key">neon</span>, <span class="key">snake</span>, or <span class="key">reef</span>.</p>
             <p style="text-align: center; margin-top: 20px; font-size: 0.8em; color: #666;">
                 [Press Enter, Esc, or Backspace to close]
             </p>
@@ -201,14 +204,10 @@
             return `#${f(0)}${f(8)}${f(4)}`;
         }
 
-        // --- MISSED TERM TRACKER ---
         const missedTerms = [];
 
-        // --- VIBE LOGIC ---
         function getColorsFromVibe(rawTerm) {
             let term = rawTerm;
-            
-            // PLURAL HANDLER (Stemmer)
             if (term.endsWith('s') && !SYNONYMS[term]) {
                 const singular = term.slice(0, -1);
                 if (SYNONYMS[singular] || singular.match(/fish|shark|whale|dog|cat|bear|wolf|fox|synth|cyber|neon|pastel|xmas|christmas|halloween/)) {
@@ -218,7 +217,6 @@
 
             let category = SYNONYMS[term];
 
-            // Fallback Logic
             if (!category) {
                 if (term === 'starfish') category = 'starfish';
                 else if (term.match(/fish|shark|whale/)) category = 'water';
@@ -267,11 +265,7 @@
                 case 'reptile': add(70, 140, 30, 60, 25, 45); add(30, 50, 40, 60, 30, 50); break;
                 case 'house': add(0, 20, 30, 50, 40, 60); add(200, 220, 0, 10, 50, 80); add(30, 50, 20, 40, 80, 95); break;
                 case 'coral': add(320, 350, 70, 100, 50, 70); add(10, 30, 80, 100, 50, 70); add(170, 190, 60, 90, 40, 60); break;
-                
-                // NEW: YAY/PARTY (Pink/Cyan/Yellow/Lime)
                 case 'party': add(300, 340, 80, 100, 50, 70); add(40, 60, 90, 100, 50, 70); add(120, 150, 80, 100, 50, 70); add(180, 200, 80, 100, 50, 70); break;
-
-                // NEW: PATRIOTIC (Red/White/Blue)
                 case 'usa': add(350, 360, 80, 100, 40, 60); add(220, 240, 80, 100, 30, 50); add(0, 0, 0, 0, 90, 100); break;
 
                 default: return null;
@@ -292,6 +286,7 @@
         const hairY = document.querySelector('.hair-y');
         const cmdInput = document.getElementById('cmd-input');
         const modal = document.getElementById('help-modal');
+        const hud = document.getElementById('hud');
         const offsetLeft = 20; const offsetBottom = 50; 
 
         const placeholders = [
@@ -310,6 +305,14 @@
 
         function render() {
             document.body.style.backgroundColor = `hsl(${hue}, ${sat}%, ${light}%)`;
+            
+            // Contrast Check for HUD
+            if (light > 55) {
+                hud.style.color = 'rgba(0,0,0,0.8)';
+            } else {
+                hud.style.color = 'rgba(255,255,255,0.8)';
+            }
+
             document.getElementById('val-hue').innerText = Math.round(hue);
             document.getElementById('val-light').innerText = Math.round(light);
             document.getElementById('val-sat').innerText = Math.round(sat);
@@ -334,7 +337,6 @@
         }
         requestAnimationFrame(updateLoop);
 
-        // Helper to check distance and stamp
         function attemptStamp() {
             const currentPos = dataToPos(hue, light);
             const dx = currentPos.x - lastStampPos.x;
@@ -348,8 +350,6 @@
         // --- INPUT HANDLING ---
         document.addEventListener('keydown', (e) => {
             const cmd = e.metaKey || e.ctrlKey;
-            
-            // Shortcuts
             if (cmd && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undoStamp(); return; }
             if ((cmd && e.shiftKey && e.key === 'z') || (cmd && e.key === 'y')) { e.preventDefault(); redoStamp(); return; }
             if (cmd && e.key === 'a') {
@@ -359,7 +359,6 @@
             }
             if (e.key === '?' && document.activeElement !== cmdInput) { toggleHelp(); return; }
             
-            // Modal Logic
             if (modal.classList.contains('open')) {
                 if (['Enter', 'Escape', 'Backspace', 'Delete'].includes(e.key)) {
                     toggleHelp();
@@ -367,7 +366,6 @@
                 return;
             }
 
-            // Global Esc Logic
             if (e.key === 'Escape') {
                 if (document.activeElement === cmdInput) {
                     cmdInput.blur();
@@ -379,7 +377,6 @@
 
             if (document.activeElement === cmdInput) return;
 
-            // Deletion
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 const selected = document.querySelectorAll('.stamp.selected');
                 if (selected.length > 0) {
@@ -397,33 +394,24 @@
             if (keys.hasOwnProperty(e.code) || e.code === "Space") keys[e.code] = false;
         });
         
-        // --- MOUSE MOVEMENT & PAINTING ---
         document.addEventListener('mousemove', (e) => {
             if(isAutoPlaying) return; 
             const dims = getDims();
             hue = Math.max(0, Math.min(360, ((e.clientX - offsetLeft) / dims.w) * 360));
             light = Math.max(0, Math.min(100, (1 - (e.clientY / dims.h)) * 100));
 
-            // PAINT if mouse is down
             if (isMouseDown) {
                 attemptStamp();
             }
         });
 
-        document.addEventListener('mouseup', () => {
-            isMouseDown = false;
-        });
-
-        document.addEventListener('wheel', (e) => {
-            sat = e.deltaY > 0 ? Math.max(0, sat - 5) : Math.min(100, sat + 5);
-        });
+        document.addEventListener('mouseup', () => { isMouseDown = false; });
+        document.addEventListener('wheel', (e) => { sat = e.deltaY > 0 ? Math.max(0, sat - 5) : Math.min(100, sat + 5); });
         
-        // --- CLICK LOGIC ---
         document.addEventListener('mousedown', (e) => {
             if (e.target.closest('#command-bar') || e.target.closest('#help-modal')) return;
             if (modal.classList.contains('open')) { toggleHelp(); return; }
 
-            // If clicking a stamp, handle selection (DO NOT PAINT)
             if (e.target.classList.contains('stamp')) {
                 if (e.metaKey || e.ctrlKey) {
                     e.target.classList.toggle('selected');
@@ -438,27 +426,21 @@
                 return;
             }
 
-            // If clicking background: Deselect & START PAINTING
             document.querySelectorAll('.stamp.selected').forEach(s => s.classList.remove('selected'));
             isMouseDown = true;
-            
-            // Stamp immediately on first click
             createStamp(hue, light, sat);
             lastStampPos = dataToPos(hue, light);
         });
 
-        // --- COMMAND BAR LOGIC ---
         cmdInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.stopPropagation(); 
-                
                 const query = cmdInput.value.toLowerCase().trim();
                 const bar = document.getElementById('command-bar');
                 
                 if (query === 'clear' || query === 'reset') {
                     document.querySelectorAll('.stamp').forEach(el => el.remove());
-                    stampHistory.length = 0; 
-                    redoStack.length = 0;
+                    stampHistory.length = 0; redoStack.length = 0;
                     document.querySelectorAll('.stamp.selected').forEach(s => s.classList.remove('selected'));
                 } 
                 else if (query === 'export' || query === 'save' || query === 'copy') {
@@ -468,11 +450,8 @@
                     toggleHelp();
                 }
                 else if (query === 'missed') {
-                    if (missedTerms.length > 0) {
-                        alert("Your session's missing words:\n- " + missedTerms.join("\n- "));
-                    } else {
-                        alert("No missing words yet!");
-                    }
+                    if (missedTerms.length > 0) alert("Missing words:\n- " + missedTerms.join("\n- "));
+                    else alert("No missing words yet!");
                 }
                 else {
                     const colors = getColorsFromVibe(query); 
@@ -481,7 +460,7 @@
                     } else {
                         if (!missedTerms.includes(query)) {
                             missedTerms.push(query);
-                            console.log("Missed term logged:", query);
+                            console.log("Missed:", query);
                         }
                         bar.style.backgroundColor = '#522';
                         setTimeout(() => bar.style.backgroundColor = '#000', 200);
@@ -491,7 +470,6 @@
             }
         });
 
-        // --- UTILS ---
         function toggleHelp() {
             modal.classList.toggle('open');
             if(modal.classList.contains('open')) {
@@ -535,12 +513,10 @@
         function exportColors() {
             const stamps = Array.from(document.querySelectorAll('.stamp')).filter(s => s.style.display !== 'none');
             if (stamps.length === 0) return;
-
             let text = "My Color Palette:\n";
             stamps.forEach((s, index) => {
                 text += `Color ${index + 1}: ${s.getAttribute('data-hex')}\n`;
             });
-
             navigator.clipboard.writeText(text).then(() => {
                 const bar = document.getElementById('command-bar');
                 const input = document.getElementById('cmd-input');
