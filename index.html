@@ -353,7 +353,13 @@
                 return;
             }
 
+            // Global Esc Logic
             if (e.key === 'Escape') {
+                // If typing, blur input to return to canvas control
+                if (document.activeElement === cmdInput) {
+                    cmdInput.blur();
+                    return;
+                }
                 document.querySelectorAll('.stamp.selected').forEach(s => s.classList.remove('selected'));
                 return;
             }
@@ -415,7 +421,7 @@
         // --- COMMAND BAR LOGIC ---
         cmdInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                e.stopPropagation(); // FIXED: Stop event from bubbling to global handler
+                e.stopPropagation(); // Stop bubbling so global handler doesn't auto-close help
                 
                 const query = cmdInput.value.toLowerCase().trim();
                 const bar = document.getElementById('command-bar');
@@ -452,7 +458,8 @@
                         setTimeout(() => bar.style.backgroundColor = '#000', 200);
                     }
                 }
-                cmdInput.value = ""; cmdInput.blur();
+                cmdInput.value = ""; 
+                // REMOVED cmdInput.blur() to allow rapid firing
             }
         });
 
