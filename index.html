@@ -18,13 +18,24 @@
             z-index: 2; border-right: 1px solid rgba(255,255,255,0.3);
         }
         .axis-x {
-            position: fixed; left: 20px; right: 0; bottom: 50px; height: 20px;
+            position: fixed; left: 20px; right: 20px; bottom: 50px; height: 20px;
             background: linear-gradient(to right, 
                 hsl(0, 100%, 50%), hsl(60, 100%, 50%), hsl(120, 100%, 50%), 
                 hsl(180, 100%, 50%), hsl(240, 100%, 50%), hsl(300, 100%, 50%), 
                 hsl(360, 100%, 50%)
             );
             z-index: 2; border-top: 1px solid rgba(255,255,255,0.3);
+        }
+        /* Z-AXIS (Right): Saturation */
+        .axis-z {
+            position: fixed; right: 0; top: 0; bottom: 50px; width: 20px;
+            background: #888; 
+            z-index: 2; border-left: 1px solid rgba(255,255,255,0.3);
+        }
+        #sat-marker {
+            position: absolute; left: 0; width: 100%; height: 4px;
+            background: white; box-shadow: 0 0 4px black;
+            transform: translateY(-50%); pointer-events: none;
         }
 
         /* --- UI ELEMENTS --- */
@@ -42,16 +53,13 @@
             width: 100%; outline: none; text-transform: lowercase;
             transition: opacity 0.3s;
         }
-        /* Fade effect for placeholder changes */
         #cmd-input::placeholder { transition: color 0.3s; }
 
         #hud {
-            position: fixed; top: 20px; right: 20px; text-align: right;
-            pointer-events: none; 
-            color: rgba(255,255,255,0.8);
-            z-index: 10;
-            font-weight: bold;
-            transition: color 0.2s;
+            position: fixed; top: 20px; right: 40px;
+            text-align: right; pointer-events: none; 
+            color: rgba(255,255,255,0.8); z-index: 10;
+            font-weight: bold; transition: color 0.2s;
         }
 
         /* --- HELP MODAL --- */
@@ -75,13 +83,13 @@
 
         /* --- GRID & CURSOR --- */
         .grid {
-            position: absolute; top: 0; left: 20px; right: 0; bottom: 70px;
+            position: absolute; top: 0; left: 20px; right: 20px; bottom: 70px;
             background-image: 
                 linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
             background-size: 50px 50px; pointer-events: none;
         }
-        .hair-x { position: fixed; left: 20px; right: 0; height: 1px; background: rgba(255,255,255,0.4); pointer-events: none; z-index: 5; }
+        .hair-x { position: fixed; left: 20px; right: 20px; height: 1px; background: rgba(255,255,255,0.4); pointer-events: none; z-index: 5; }
         .hair-y { position: fixed; top: 0; bottom: 70px; width: 1px; background: rgba(255,255,255,0.4); pointer-events: none; z-index: 5; }
 
         /* --- STAMPS & SELECTION --- */
@@ -119,15 +127,16 @@
             <span class="close-btn" onclick="toggleHelp()">×</span>
             <h2>COMMAND MANUAL</h2>
             <p><strong>Explore:</strong> Move mouse to change color.</p>
+            <p><strong>Saturation:</strong> Scroll Up/Down (Right Bar).</p>
             <p><strong>Paint:</strong> Click and Drag anywhere.</p>
             <p><strong>Shortcuts:</strong></p>
             <ul>
                 <li><span class="key">Ctrl</span> + <span class="key">Z</span> : Undo</li>
-                <li><span class="key">Ctrl</span> + <span class="key">Y</span> : Redo</li>
                 <li><span class="key">Ctrl</span> + <span class="key">A</span> : Select All</li>
+                <li><span class="key">Cmd</span> + <span class="key">⌫</span> : Clear All</li>
                 <li><span class="key">Del</span> : Delete Selected</li>
             </ul>
-            <p><strong>Commands:</strong> Type <span class="key">export</span>, <span class="key">clear</span>, <span class="key">missed</span>, or vibes like <span class="key">neon</span>, <span class="key">snake</span>, or <span class="key">reef</span>.</p>
+            <p><strong>Commands:</strong> <span class="key">export</span>, <span class="key">clear</span>, <span class="key">missed</span>.<br>Try vibes: <span class="key">neon</span>, <span class="key">snake</span>, <span class="key">lucky</span>.</p>
             <p style="text-align: center; margin-top: 20px; font-size: 0.8em; color: #666;">
                 [Press Enter, Esc, or Backspace to close]
             </p>
@@ -136,6 +145,7 @@
 
     <div class="axis-y"></div>
     <div class="axis-x"></div>
+    <div class="axis-z" id="axis-z"><div id="sat-marker"></div></div>
     <div class="grid"></div>
 
     <div id="hud">
@@ -151,36 +161,25 @@
     </div>
 
     <script>
-        // --- DATA: SYNONYM MAP ---
+        // --- DATA ---
         const SYNONYMS = {
-            // NATURE
             'forest': 'forest', 'tree': 'forest', 'fern': 'forest', 'moss': 'forest', 'jungle': 'forest', 'pine': 'forest',
             'ocean': 'water', 'sea': 'water', 'rain': 'water', 'water': 'water', 'lake': 'water', 'pool': 'water',
             'fire': 'fire', 'flame': 'fire', 'burn': 'fire', 'hot': 'fire', 'magma': 'fire',
             'ice': 'ice', 'snow': 'ice', 'glacier': 'ice', 'frozen': 'ice', 'cold': 'ice',
             'sunset': 'sunset', 'dusk': 'sunset', 'dawn': 'sunset', 'sunrise': 'sunset', 'horizon': 'sunset',
             'midnight': 'night', 'night': 'night', 'dark': 'night', 'moon': 'night', 'space': 'night',
-            
-            // ANIMALS
             'snake': 'reptile', 'lizard': 'reptile', 'turtle': 'reptile', 'alligator': 'reptile', 'croc': 'reptile', 'reptile': 'reptile', 'dragon': 'reptile',
-            
-            // OBJECTS
             'house': 'house', 'home': 'house', 'brick': 'house', 'city': 'house', 'building': 'house', 'cottage': 'house',
             'reef': 'coral', 'coral': 'coral', 'sponge': 'coral', 'anemone': 'coral', 'scuba': 'coral',
-
-            // FOOD
             'lemon': 'citrus', 'lime': 'citrus', 'citrus': 'citrus', 'sour': 'citrus', 'fruit': 'citrus',
             'berry': 'berry', 'strawberry': 'berry', 'raspberry': 'berry', 'jam': 'berry',
             'wine': 'wine', 'merlot': 'wine', 'grape': 'wine', 'burgundy': 'wine',
             'candy': 'candy', 'sweet': 'candy', 'bubblegum': 'candy', 'pink': 'candy',
             'chocolate': 'choco', 'coffee': 'choco', 'brown': 'choco', 'latte': 'choco', 'mocha': 'choco',
-            
-            // ELEMENTS
             'gold': 'gold', 'golden': 'gold', 'honey': 'gold', 'brass': 'gold',
             'silver': 'silver', 'metal': 'silver', 'steel': 'silver', 'grey': 'silver', 'gray': 'silver',
             'rust': 'rust', 'orange': 'rust', 'clay': 'rust', 'mars': 'rust',
-            
-            // EMOTIONS & EVENTS
             'royal': 'royal', 'king': 'royal', 'purple': 'royal', 'majestic': 'royal',
             'angry': 'fire', 'rage': 'fire', 'danger': 'fire',
             'sad': 'sad', 'blues': 'sad', 'gloom': 'sad', 'rainy': 'sad',
@@ -188,13 +187,12 @@
             'calm': 'water', 'peace': 'water',
             'love': 'love', 'romance': 'love', 'valentine': 'love', 'rose': 'love', 'heart': 'love',
             'retro': 'retro', 'vintage': 'retro', '70s': 'retro', 'nostalgia': 'retro',
-            
-            // NEW ADDITIONS
             'yay': 'party', 'celebration': 'party', 'party': 'party', 'confetti': 'party',
             'patriotic': 'usa', 'usa': 'usa', 'america': 'usa', 'flag': 'usa',
+            'starfish': 'starfish',
             
-            // SPECIFIC OVERRIDES
-            'starfish': 'starfish' 
+            // NEW: LUCKY/RANDOM
+            'lucky': 'random', 'random': 'random', 'dice': 'random', 'shuffle': 'random'
         };
 
         function hslToHex(h, s, l) {
@@ -240,6 +238,7 @@
             };
 
             switch(category) {
+                // ... Existing Vibes ...
                 case 'forest': for(let i=0; i<count; i++) add(80, 150, 30, 70, 20, 50); break;
                 case 'water': for(let i=0; i<count; i++) add(170, 240, 50, 90, 40, 80); break;
                 case 'fire': for(let i=0; i<count; i++) add(0, 40, 70, 100, 40, 60); break;
@@ -263,13 +262,15 @@
                 case 'pastel': for(let i=0; i<count; i++) add(0, 360, 30, 60, 80, 95); break;
                 case 'xmas': add(350, 360, 80, 100, 40, 60); add(120, 150, 60, 90, 30, 50); break;
                 case 'halloween': add(20, 40, 90, 100, 40, 60); add(270, 280, 60, 90, 20, 40); break;
-                
                 case 'starfish': add(330, 360, 60, 90, 60, 80); add(10, 30, 70, 100, 50, 70); add(0, 15, 60, 80, 60, 80); break;
                 case 'reptile': add(70, 140, 30, 60, 25, 45); add(30, 50, 40, 60, 30, 50); break;
                 case 'house': add(0, 20, 30, 50, 40, 60); add(200, 220, 0, 10, 50, 80); add(30, 50, 20, 40, 80, 95); break;
                 case 'coral': add(320, 350, 70, 100, 50, 70); add(10, 30, 80, 100, 50, 70); add(170, 190, 60, 90, 40, 60); break;
                 case 'party': add(300, 340, 80, 100, 50, 70); add(40, 60, 90, 100, 50, 70); add(120, 150, 80, 100, 50, 70); add(180, 200, 80, 100, 50, 70); break;
                 case 'usa': add(350, 360, 80, 100, 40, 60); add(220, 240, 80, 100, 30, 50); add(0, 0, 0, 0, 90, 100); break;
+
+                // NEW: RANDOM / LUCKY
+                case 'random': for(let i=0; i<count; i++) add(0, 360, 10, 100, 10, 90); break;
 
                 default: return null;
             }
@@ -290,34 +291,31 @@
         const cmdInput = document.getElementById('cmd-input');
         const modal = document.getElementById('help-modal');
         const hud = document.getElementById('hud');
+        const axisZ = document.getElementById('axis-z');
+        const satMarker = document.getElementById('sat-marker');
         const offsetLeft = 20; const offsetBottom = 50; 
 
-        // --- ROTATING PLACEHOLDERS ---
+        // --- ROTATING PLACEHOLDERS (Removed "Missed") ---
         const placeholders = [
             "try 'snake', 'patriotic', or 'yay'...",
-            "feeling 'royal'? try 'wine'?",
+            "feeling 'lucky'? try 'random'...",
             "try 'retro', 'gold', or 'love'...",
             "type 'help' for manual...",
-            "type 'missed' to see failed words...",
             "click and drag to paint...",
-            "press spacebar to stamp...",
+            "scroll to change saturation...",
             "try 'coral' or 'starfish'..."
         ];
         
         let pIndex = 0;
-        // Initial set
         cmdInput.placeholder = placeholders[0];
-        
-        // Cycle every 4 seconds
         setInterval(() => {
-            // Only cycle if user hasn't typed anything
             if (cmdInput.value === "") {
                 pIndex = (pIndex + 1) % placeholders.length;
                 cmdInput.placeholder = placeholders[pIndex];
             }
         }, 4000);
 
-        function getDims() { return { w: window.innerWidth - offsetLeft, h: window.innerHeight - offsetBottom }; }
+        function getDims() { return { w: window.innerWidth - offsetLeft - 20, h: window.innerHeight - offsetBottom }; } 
         function dataToPos(h, l) {
             const dims = getDims();
             return { x: offsetLeft + ((h / 360) * dims.w), y: ((100 - l) / 100) * dims.h };
@@ -334,6 +332,12 @@
             const pos = dataToPos(hue, light);
             hairX.style.top = pos.y + 'px';
             hairY.style.left = pos.x + 'px';
+
+            axisZ.style.background = `linear-gradient(to top, hsl(${hue}, 0%, 50%), hsl(${hue}, 100%, 50%))`;
+            const dims = getDims();
+            const barHeight = dims.h; 
+            const markerY = (1 - (sat / 100)) * barHeight;
+            satMarker.style.top = markerY + 'px';
         }
 
         function updateLoop() {
@@ -372,6 +376,14 @@
                 document.querySelectorAll('.stamp').forEach(s => s.classList.add('selected'));
                 return;
             }
+            
+            // NEW: CMD + BACKSPACE/DELETE (Clear All)
+            if (cmd && (e.key === 'Backspace' || e.key === 'Delete')) {
+                e.preventDefault();
+                clearAll();
+                return;
+            }
+
             if (e.key === '?' && document.activeElement !== cmdInput) { toggleHelp(); return; }
             
             if (modal.classList.contains('open')) {
@@ -454,9 +466,7 @@
                 const bar = document.getElementById('command-bar');
                 
                 if (query === 'clear' || query === 'reset') {
-                    document.querySelectorAll('.stamp').forEach(el => el.remove());
-                    stampHistory.length = 0; redoStack.length = 0;
-                    document.querySelectorAll('.stamp.selected').forEach(s => s.classList.remove('selected'));
+                    clearAll();
                 } 
                 else if (query === 'export' || query === 'save' || query === 'copy') {
                     exportColors();
@@ -484,6 +494,14 @@
                 cmdInput.value = ""; 
             }
         });
+
+        // --- UTILS ---
+        function clearAll() {
+            document.querySelectorAll('.stamp').forEach(el => el.remove());
+            stampHistory.length = 0; redoStack.length = 0;
+            document.querySelectorAll('.stamp.selected').forEach(s => s.classList.remove('selected'));
+            hue = 180; sat = 100; light = 50; // Reset background state
+        }
 
         function toggleHelp() {
             modal.classList.toggle('open');
