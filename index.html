@@ -56,14 +56,31 @@
         .hair-x { position: fixed; left: 20px; right: 0; height: 1px; background: rgba(255,255,255,0.4); pointer-events: none; z-index: 5; }
         .hair-y { position: fixed; top: 0; bottom: 70px; width: 1px; background: rgba(255,255,255,0.4); pointer-events: none; z-index: 5; }
 
+        /* --- STAMPS & HOVER TOOLTIP --- */
         .stamp {
             position: absolute; width: 40px; height: 40px;
             border-radius: 50%; border: 2px solid white;
             transform: translate(-50%, -50%); z-index: 1;
             box-shadow: 0 2px 5px rgba(0,0,0,0.5);
             transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: help; /* Indicates info available */
+            pointer-events: auto; /* Allow hovering */
         }
         .stamp.pop { transform: translate(-50%, -50%) scale(1.5); }
+        
+        /* The Hex Code Tooltip */
+        .stamp:hover::after {
+            content: attr(data-hex); /* Pulls text from HTML attribute */
+            position: absolute;
+            bottom: 50px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            color: #00ffcc;
+            padding: 5px 8px; border-radius: 4px;
+            font-size: 12px; font-weight: bold;
+            border: 1px solid #00ffcc;
+            white-space: nowrap; z-index: 20;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
     </style>
 </head>
 <body>
@@ -85,8 +102,19 @@
     </div>
 
     <script>
-        // --- LOGIC ENGINE ---
-        
+        // --- HELPER: HSL to HEX Conversion ---
+        function hslToHex(h, s, l) {
+            l /= 100;
+            const a = s * Math.min(l, 1 - l) / 100;
+            const f = n => {
+                const k = (n + h / 30) % 12;
+                const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                return Math.round(255 * color).toString(16).padStart(2, '0');
+            };
+            return `#${f(0)}${f(8)}${f(4)}`;
+        }
+
+        // --- LOGIC ENGINE (Updated) ---
         function getColorsFromVibe(term) {
             const colors = [];
             const count = 5; 
@@ -97,37 +125,73 @@
                 colors.push({h, s, l});
             };
 
-            // WATER / OCEAN 
-            if (term.match(/fish|sea|ocean|water|rain|pool|beach|shark|whale/)) {
-                for(let i=0; i<count; i++) add(160, 260, 50, 100, 40, 80);
-                if(term.includes('jelly')) add(300, 340, 80, 100, 60, 90); 
+            // 1. SPECIFIC OBJECTS
+            if (term.match(/school\s?bus|bus/)) {
+                for(let i=0; i<count; i++) add(40, 50, 90, 100, 45, 55); // That specific yellow
             }
-            // NATURE / FOREST 
+            else if (term.match(/chair|wood|furniture/)) {
+                for(let i=0; i<count; i++) add(20, 40, 30, 60, 20, 50); // Browns/Oaks
+            }
+            
+            // 2. LOCATIONS / NATURE
+            else if (term.match(/santa\s?fe|desert|adobe|canyon/)) {
+                add(10, 30, 40, 70, 40, 60); // Terracotta
+                add(170, 190, 30, 60, 40, 60); // Turquoise
+                add(70, 100, 20, 40, 40, 60); // Sage
+                add(30, 50, 40, 60, 70, 85); // Sand
+                add(10, 30, 40, 70, 40, 60); // More Terracotta
+            }
+            else if (term.match(/star|planet|space|galaxy|cosmos/)) {
+                add(220, 260, 60, 100, 5, 20); // Deep Space Blue
+                add(260, 290, 50, 80, 10, 30); // Nebula Purple
+                add(0, 0, 0, 0, 90, 100);      // Starlight White
+                add(30, 50, 80, 100, 50, 70);  // Gold/Sun
+                add(0, 360, 80, 100, 50, 60);  // Random Planet Color
+            }
             else if (term.match(/forest|tree|plant|fern|moss|garden|nature|frog/)) {
                 for(let i=0; i<count; i++) add(80, 160, 30, 70, 20, 60); 
                 add(20, 50, 40, 60, 20, 40); 
             }
-            // WARM / COZY 
+            else if (term.match(/fish|sea|ocean|water|rain|pool|beach|shark|whale/)) {
+                for(let i=0; i<count; i++) add(160, 260, 50, 100, 40, 80);
+                if(term.includes('jelly')) add(300, 340, 80, 100, 60, 90); 
+            }
+
+            // 3. CONCEPTS / VIBES
+            else if (term.match(/science|lab|tech|chemistry/)) {
+                add(190, 200, 80, 100, 50, 70); // Cyan/Beaker
+                add(120, 140, 90, 100, 50, 70); // Neon Green/Glow
+                add(0, 0, 0, 0, 90, 100);       // White Coat
+                add(280, 300, 80, 100, 50, 70); // UV Light
+                add(0, 0, 0, 0, 80, 90);        // Steel
+            }
+            else if (term.match(/synth|cyber|neon|future/)) {
+                for(let i=0; i<count; i++) add(280, 340, 80, 100, 40, 60); // Pinks/Purples
+                add(180, 200, 90, 100, 50, 60); // Cyan grid
+            }
+            else if (term.match(/green|go/)) {
+                for(let i=0; i<count; i++) add(90, 140, 70, 100, 40, 60); // Traffic Green
+            }
             else if (term.match(/fire|autumn|cozy|warm|coffee|latte|home|bread|wood/)) {
                 for(let i=0; i<count; i++) add(10, 50, 40, 80, 40, 70); 
                 add(0, 20, 60, 90, 30, 50); 
             }
-            // ANIMALS 
+
+            // 4. ANIMALS & HOLIDAYS
             else if (term.match(/dog|cat|bear|wolf|fox|fur/)) {
                 for(let i=0; i<count; i++) add(15, 45, 20, 60, 30, 80); 
                 if (term.includes('fox')) add(10, 25, 70, 90, 40, 60); 
             }
-            // HOLIDAYS 
             else if (term.includes('christmas') || term.includes('xmas')) {
-                add(350, 360, 80, 100, 40, 60); add(0, 10, 80, 100, 40, 60);    
-                add(120, 150, 60, 90, 30, 50);  add(120, 150, 60, 90, 30, 50);  
-                add(40, 60, 80, 100, 50, 80);   
+                add(350, 360, 80, 100, 40, 60); add(120, 150, 60, 90, 30, 50);  
+                add(40, 60, 80, 100, 50, 80); add(0, 10, 80, 100, 40, 60);
+                add(120, 150, 60, 90, 30, 50);   
             }
             else if (term.includes('halloween')) {
                 add(20, 40, 90, 100, 40, 60); add(260, 280, 60, 90, 20, 40); add(0, 0, 0, 0, 10, 20);      
             }
-            // DEFAULT MOODS
-            else if (term === 'neon') for(let i=0; i<count; i++) add(0, 360, 90, 100, 50, 60);
+
+            // DEFAULT
             else if (term === 'pastel') for(let i=0; i<count; i++) add(0, 360, 30, 60, 80, 95);
             else if (term === 'winter') for(let i=0; i<count; i++) add(180, 240, 20, 60, 70, 95);
             else if (term === 'summer') for(let i=0; i<count; i++) add(0, 60, 70, 100, 50, 80);
@@ -141,8 +205,6 @@
         let isAutoPlaying = false; 
         const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, Space: false };
         let lastStampPos = { x: -999, y: -999 };
-        
-        // Stamp History (for Undo)
         const stampHistory = [];
 
         const hairX = document.querySelector('.hair-x');
@@ -150,11 +212,11 @@
         const cmdInput = document.getElementById('cmd-input');
         const offsetLeft = 20; const offsetBottom = 50; 
 
-        // --- RANDOM PLACEHOLDER ON LOAD ---
+        // --- RANDOM PLACEHOLDER ---
         const placeholders = [
-            "try 'winter', 'neon', or 'forest'...",
-            "feeling 'cozy'? maybe 'pastel'?",
-            "try 'jellyfish', 'fox', or 'fire'...",
+            "try 'santa fe', 'neon', or 'forest'...",
+            "feeling 'cozy'? try 'schoolbus'?",
+            "try 'science', 'planets', or 'fire'...",
             "type 'help' for commands..."
         ];
         cmdInput.placeholder = placeholders[Math.floor(Math.random() * placeholders.length)];
@@ -200,15 +262,12 @@
 
         // --- INPUT HANDLING ---
         document.addEventListener('keydown', (e) => {
-            // BACKSPACE UNDO (Only if not typing in command bar)
             if (e.key === 'Backspace' && document.activeElement !== cmdInput) {
-                undoStamp();
-                return;
+                undoStamp(); return;
             }
             if (document.activeElement === cmdInput) return;
             if (keys.hasOwnProperty(e.code) || e.code === "Space") keys[e.code] = true;
         });
-
         document.addEventListener('keyup', (e) => {
             if (keys.hasOwnProperty(e.code) || e.code === "Space") keys[e.code] = false;
         });
@@ -234,24 +293,21 @@
                 const query = cmdInput.value.toLowerCase().trim();
                 const bar = document.getElementById('command-bar');
                 
-                // COMMANDS
                 if (query === 'clear' || query === 'reset') {
                     document.querySelectorAll('.stamp').forEach(el => el.remove());
-                    stampHistory.length = 0; // Clear history
+                    stampHistory.length = 0; 
                 } 
                 else if (query === 'export' || query === 'save' || query === 'copy') {
                     exportColors();
                 }
                 else if (query === 'help') {
-                    alert("COMMANDS:\n\n'export' - Copy palette to clipboard\n'clear' - Reset screen\n[Backspace] - Undo last stamp\n\nTry typing a vibe like 'winter', 'forest', or 'neon'!");
+                    alert("COMMANDS:\n'export', 'clear', [Backspace] to undo.\nTry 'santa fe', 'schoolbus', 'science', or 'synth'!");
                 }
-                // VIBES
                 else {
                     const colors = getColorsFromVibe(query); 
                     if (colors) {
                         playPalette(colors);
                     } else {
-                        // Error Buzzer (Red)
                         bar.style.backgroundColor = '#522';
                         setTimeout(() => bar.style.backgroundColor = '#000', 200);
                     }
@@ -267,11 +323,13 @@
             const pos = dataToPos(h, l);
             stamp.style.left = pos.x + 'px'; stamp.style.top = pos.y + 'px';
             stamp.style.backgroundColor = `hsl(${h}, ${s}%, ${l}%)`;
+            
+            // Store Hex for Tooltip
+            const hex = hslToHex(h, s, l);
+            stamp.setAttribute('data-hex', hex);
+            
             document.body.appendChild(stamp);
-            
-            // Add to history for Undo
             stampHistory.push(stamp);
-            
             requestAnimationFrame(() => stamp.classList.add('pop'));
         }
 
@@ -284,21 +342,15 @@
 
         function exportColors() {
             if (stampHistory.length === 0) return;
-            
             let text = "My Color Palette:\n";
             stampHistory.forEach((s, index) => {
-                text += `Color ${index + 1}: ${s.style.backgroundColor}\n`;
+                text += `Color ${index + 1}: ${s.getAttribute('data-hex')}\n`; // Export Hex now
             });
-
             navigator.clipboard.writeText(text).then(() => {
                 const bar = document.getElementById('command-bar');
                 const input = document.getElementById('cmd-input');
-                const originalPlaceholder = input.placeholder;
-                
-                // Visual success cue (Green Flash)
                 bar.style.backgroundColor = '#004433'; 
                 input.value = "COPIED TO CLIPBOARD!";
-                
                 setTimeout(() => {
                     bar.style.backgroundColor = '#000';
                     input.value = "";
