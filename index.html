@@ -26,7 +26,6 @@
             );
             z-index: 2; border-top: 1px solid rgba(255,255,255,0.3);
         }
-        /* Z-AXIS (Right): Saturation */
         .axis-z {
             position: fixed; right: 0; top: 0; bottom: 50px; width: 20px;
             background: #888; 
@@ -84,10 +83,12 @@
         /* --- GRID & CURSOR --- */
         .grid {
             position: absolute; top: 0; left: 20px; right: 20px; bottom: 70px;
+            /* Default grid, will be overridden by JS */
             background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+                linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
             background-size: 50px 50px; pointer-events: none;
+            transition: opacity 0.2s; 
         }
         .hair-x { position: fixed; left: 20px; right: 20px; height: 1px; background: rgba(255,255,255,0.4); pointer-events: none; z-index: 5; }
         .hair-y { position: fixed; top: 0; bottom: 70px; width: 1px; background: rgba(255,255,255,0.4); pointer-events: none; z-index: 5; }
@@ -132,11 +133,12 @@
             <p><strong>Shortcuts:</strong></p>
             <ul>
                 <li><span class="key">Ctrl</span> + <span class="key">Z</span> : Undo</li>
+                <li><span class="key">Ctrl</span> + <span class="key">Y</span> : Redo</li>
                 <li><span class="key">Ctrl</span> + <span class="key">A</span> : Select All</li>
                 <li><span class="key">Cmd</span> + <span class="key">⌫</span> : Clear All</li>
                 <li><span class="key">Del</span> : Delete Selected</li>
             </ul>
-            <p><strong>Commands:</strong> <span class="key">export</span>, <span class="key">clear</span>, <span class="key">missed</span>.<br>Try vibes: <span class="key">neon</span>, <span class="key">snake</span>, <span class="key">lucky</span>.</p>
+            <p><strong>Commands:</strong> <span class="key">export</span>, <span class="key">clear</span>.<br>Try vibes: <span class="key">neon</span>, <span class="key">snake</span>, <span class="key">lucky</span>.</p>
             <p style="text-align: center; margin-top: 20px; font-size: 0.8em; color: #666;">
                 [Press Enter, Esc, or Backspace to close]
             </p>
@@ -146,6 +148,7 @@
     <div class="axis-y"></div>
     <div class="axis-x"></div>
     <div class="axis-z" id="axis-z"><div id="sat-marker"></div></div>
+    
     <div class="grid"></div>
 
     <div id="hud">
@@ -190,8 +193,6 @@
             'yay': 'party', 'celebration': 'party', 'party': 'party', 'confetti': 'party',
             'patriotic': 'usa', 'usa': 'usa', 'america': 'usa', 'flag': 'usa',
             'starfish': 'starfish',
-            
-            // NEW: LUCKY/RANDOM
             'lucky': 'random', 'random': 'random', 'dice': 'random', 'shuffle': 'random'
         };
 
@@ -238,7 +239,6 @@
             };
 
             switch(category) {
-                // ... Existing Vibes ...
                 case 'forest': for(let i=0; i<count; i++) add(80, 150, 30, 70, 20, 50); break;
                 case 'water': for(let i=0; i<count; i++) add(170, 240, 50, 90, 40, 80); break;
                 case 'fire': for(let i=0; i<count; i++) add(0, 40, 70, 100, 40, 60); break;
@@ -268,10 +268,7 @@
                 case 'coral': add(320, 350, 70, 100, 50, 70); add(10, 30, 80, 100, 50, 70); add(170, 190, 60, 90, 40, 60); break;
                 case 'party': add(300, 340, 80, 100, 50, 70); add(40, 60, 90, 100, 50, 70); add(120, 150, 80, 100, 50, 70); add(180, 200, 80, 100, 50, 70); break;
                 case 'usa': add(350, 360, 80, 100, 40, 60); add(220, 240, 80, 100, 30, 50); add(0, 0, 0, 0, 90, 100); break;
-
-                // NEW: RANDOM / LUCKY
                 case 'random': for(let i=0; i<count; i++) add(0, 360, 10, 100, 10, 90); break;
-
                 default: return null;
             }
             return colors;
@@ -293,6 +290,7 @@
         const hud = document.getElementById('hud');
         const axisZ = document.getElementById('axis-z');
         const satMarker = document.getElementById('sat-marker');
+        const gridEl = document.querySelector('.grid');
         const offsetLeft = 20; const offsetBottom = 50; 
 
         // --- ROTATING PLACEHOLDERS (Removed "Missed") ---
@@ -323,8 +321,21 @@
 
         function render() {
             document.body.style.backgroundColor = `hsl(${hue}, ${sat}%, ${light}%)`;
-            if (light > 55) hud.style.color = 'rgba(0,0,0,0.8)';
-            else hud.style.color = 'rgba(255,255,255,0.8)';
+            
+            // Contrast Check for HUD & GRID
+            if (light > 55) {
+                hud.style.color = 'rgba(0,0,0,0.8)';
+                gridEl.style.backgroundImage = `
+                    linear-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0, 0, 0, 0.06) 1px, transparent 1px)
+                `;
+            } else {
+                hud.style.color = 'rgba(255,255,255,0.8)';
+                gridEl.style.backgroundImage = `
+                    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px)
+                `;
+            }
 
             document.getElementById('val-hue').innerText = Math.round(hue);
             document.getElementById('val-light').innerText = Math.round(light);
@@ -377,7 +388,7 @@
                 return;
             }
             
-            // NEW: CMD + BACKSPACE/DELETE (Clear All)
+            // CMD + BACKSPACE (Clear All)
             if (cmd && (e.key === 'Backspace' || e.key === 'Delete')) {
                 e.preventDefault();
                 clearAll();
@@ -582,6 +593,11 @@
             hairX.style.transition = 'none'; hairY.style.transition = 'none';
             next();
         }
+
+        // Initialize Focus
+        window.onload = function() {
+            cmdInput.focus();
+        };
     </script>
 </body>
 </html>
