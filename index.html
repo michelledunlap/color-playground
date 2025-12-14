@@ -113,7 +113,7 @@
             <span class="close-btn" onclick="toggleHelp()">×</span>
             <h2>COMMAND MANUAL</h2>
             <p><strong>Explore:</strong> Move mouse to change color.</p>
-            <p><strong>Stamp:</strong> Click or press <span class="key">Space</span></p>
+            <p><strong>Paint:</strong> Click and Drag anywhere.</p>
             <p><strong>Shortcuts:</strong></p>
             <ul>
                 <li><span class="key">Ctrl</span> + <span class="key">Z</span> : Undo</li>
@@ -121,7 +121,7 @@
                 <li><span class="key">Ctrl</span> + <span class="key">A</span> : Select All</li>
                 <li><span class="key">Del</span> : Delete Selected</li>
             </ul>
-            <p><strong>Commands:</strong> Type <span class="key">export</span>, <span class="key">missed</span>, or vibes like <span class="key">neon</span>, <span class="key">snake</span>, or <span class="key">reef</span>.</p>
+            <p><strong>Commands:</strong> Type <span class="key">export</span>, <span class="key">missed</span>, or vibes like <span class="key">patriotic</span>, <span class="key">yay</span>, or <span class="key">reef</span>.</p>
             <p style="text-align: center; margin-top: 20px; font-size: 0.8em; color: #666;">
                 [Press Enter, Esc, or Backspace to close]
             </p>
@@ -155,13 +155,11 @@
             'sunset': 'sunset', 'dusk': 'sunset', 'dawn': 'sunset', 'sunrise': 'sunset', 'horizon': 'sunset',
             'midnight': 'night', 'night': 'night', 'dark': 'night', 'moon': 'night', 'space': 'night',
             
-            // REPTILES (Snake)
+            // ANIMALS
             'snake': 'reptile', 'lizard': 'reptile', 'turtle': 'reptile', 'alligator': 'reptile', 'croc': 'reptile', 'reptile': 'reptile', 'dragon': 'reptile',
             
-            // ARCHITECTURE (House)
+            // OBJECTS
             'house': 'house', 'home': 'house', 'brick': 'house', 'city': 'house', 'building': 'house', 'cottage': 'house',
-
-            // CORAL REEF (Reef)
             'reef': 'coral', 'coral': 'coral', 'sponge': 'coral', 'anemone': 'coral', 'scuba': 'coral',
 
             // FOOD
@@ -176,14 +174,18 @@
             'silver': 'silver', 'metal': 'silver', 'steel': 'silver', 'grey': 'silver', 'gray': 'silver',
             'rust': 'rust', 'orange': 'rust', 'clay': 'rust', 'mars': 'rust',
             
-            // EMOTIONS
+            // EMOTIONS & EVENTS
             'royal': 'royal', 'king': 'royal', 'purple': 'royal', 'majestic': 'royal',
             'angry': 'fire', 'rage': 'fire', 'danger': 'fire',
             'sad': 'sad', 'blues': 'sad', 'gloom': 'sad', 'rainy': 'sad',
-            'happy': 'citrus', 'joy': 'citrus',
+            'happy': 'citrus', 'joy': 'citrus', 'smile': 'citrus',
             'calm': 'water', 'peace': 'water',
             'love': 'love', 'romance': 'love', 'valentine': 'love', 'rose': 'love', 'heart': 'love',
             'retro': 'retro', 'vintage': 'retro', '70s': 'retro', 'nostalgia': 'retro',
+            
+            // NEW ADDITIONS
+            'yay': 'party', 'celebration': 'party', 'party': 'party', 'confetti': 'party',
+            'patriotic': 'usa', 'usa': 'usa', 'america': 'usa', 'flag': 'usa',
             
             // SPECIFIC OVERRIDES
             'starfish': 'starfish' 
@@ -265,6 +267,12 @@
                 case 'reptile': add(70, 140, 30, 60, 25, 45); add(30, 50, 40, 60, 30, 50); break;
                 case 'house': add(0, 20, 30, 50, 40, 60); add(200, 220, 0, 10, 50, 80); add(30, 50, 20, 40, 80, 95); break;
                 case 'coral': add(320, 350, 70, 100, 50, 70); add(10, 30, 80, 100, 50, 70); add(170, 190, 60, 90, 40, 60); break;
+                
+                // NEW: YAY/PARTY (Pink/Cyan/Yellow/Lime)
+                case 'party': add(300, 340, 80, 100, 50, 70); add(40, 60, 90, 100, 50, 70); add(120, 150, 80, 100, 50, 70); add(180, 200, 80, 100, 50, 70); break;
+
+                // NEW: PATRIOTIC (Red/White/Blue)
+                case 'usa': add(350, 360, 80, 100, 40, 60); add(220, 240, 80, 100, 30, 50); add(0, 0, 0, 0, 90, 100); break;
 
                 default: return null;
             }
@@ -274,6 +282,7 @@
         // --- MAIN STATE ---
         let hue = 180, sat = 100, light = 50;
         let isAutoPlaying = false; 
+        let isMouseDown = false;
         const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, Space: false };
         let lastStampPos = { x: -999, y: -999 };
         const stampHistory = [];
@@ -286,7 +295,7 @@
         const offsetLeft = 20; const offsetBottom = 50; 
 
         const placeholders = [
-            "try 'snake', 'house', or 'reef'...",
+            "try 'snake', 'patriotic', or 'yay'...",
             "try 'retro', 'gold', or 'love'...",
             "type 'help' for manual...",
             "type 'missed' to see what failed..."
@@ -318,18 +327,23 @@
             if (keys.ArrowDown) light = Math.max(0, light - step);
 
             if (keys.Space) {
-                const currentPos = dataToPos(hue, light);
-                const dx = currentPos.x - lastStampPos.x;
-                const dy = currentPos.y - lastStampPos.y;
-                if (Math.sqrt(dx*dx + dy*dy) > 30) {
-                    createStamp(hue, light, sat);
-                    lastStampPos = { x: currentPos.x, y: currentPos.y };
-                }
+                attemptStamp();
             }
             render();
             requestAnimationFrame(updateLoop);
         }
         requestAnimationFrame(updateLoop);
+
+        // Helper to check distance and stamp
+        function attemptStamp() {
+            const currentPos = dataToPos(hue, light);
+            const dx = currentPos.x - lastStampPos.x;
+            const dy = currentPos.y - lastStampPos.y;
+            if (Math.sqrt(dx*dx + dy*dy) > 30) {
+                createStamp(hue, light, sat);
+                lastStampPos = { x: currentPos.x, y: currentPos.y };
+            }
+        }
 
         // --- INPUT HANDLING ---
         document.addEventListener('keydown', (e) => {
@@ -345,7 +359,7 @@
             }
             if (e.key === '?' && document.activeElement !== cmdInput) { toggleHelp(); return; }
             
-            // Modal Logic (Enter/Esc/Delete/Backspace to Close)
+            // Modal Logic
             if (modal.classList.contains('open')) {
                 if (['Enter', 'Escape', 'Backspace', 'Delete'].includes(e.key)) {
                     toggleHelp();
@@ -382,21 +396,34 @@
         document.addEventListener('keyup', (e) => {
             if (keys.hasOwnProperty(e.code) || e.code === "Space") keys[e.code] = false;
         });
+        
+        // --- MOUSE MOVEMENT & PAINTING ---
         document.addEventListener('mousemove', (e) => {
             if(isAutoPlaying) return; 
             const dims = getDims();
             hue = Math.max(0, Math.min(360, ((e.clientX - offsetLeft) / dims.w) * 360));
             light = Math.max(0, Math.min(100, (1 - (e.clientY / dims.h)) * 100));
+
+            // PAINT if mouse is down
+            if (isMouseDown) {
+                attemptStamp();
+            }
         });
+
+        document.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
         document.addEventListener('wheel', (e) => {
             sat = e.deltaY > 0 ? Math.max(0, sat - 5) : Math.min(100, sat + 5);
         });
         
         // --- CLICK LOGIC ---
-        document.addEventListener('click', (e) => {
+        document.addEventListener('mousedown', (e) => {
             if (e.target.closest('#command-bar') || e.target.closest('#help-modal')) return;
             if (modal.classList.contains('open')) { toggleHelp(); return; }
 
+            // If clicking a stamp, handle selection (DO NOT PAINT)
             if (e.target.classList.contains('stamp')) {
                 if (e.metaKey || e.ctrlKey) {
                     e.target.classList.toggle('selected');
@@ -411,16 +438,19 @@
                 return;
             }
 
+            // If clicking background: Deselect & START PAINTING
             document.querySelectorAll('.stamp.selected').forEach(s => s.classList.remove('selected'));
+            isMouseDown = true;
+            
+            // Stamp immediately on first click
             createStamp(hue, light, sat);
-            const pos = dataToPos(hue, light);
-            lastStampPos = { x: pos.x, y: pos.y };
+            lastStampPos = dataToPos(hue, light);
         });
 
         // --- COMMAND BAR LOGIC ---
         cmdInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                e.stopPropagation(); // Stop bubbling
+                e.stopPropagation(); 
                 
                 const query = cmdInput.value.toLowerCase().trim();
                 const bar = document.getElementById('command-bar');
@@ -458,7 +488,6 @@
                     }
                 }
                 cmdInput.value = ""; 
-                // DO NOT BLUR here, keep focus for rapid fire
             }
         });
 
@@ -468,7 +497,7 @@
             if(modal.classList.contains('open')) {
                 document.activeElement.blur();
             } else {
-                cmdInput.focus(); // Focus command bar when exiting help
+                cmdInput.focus(); 
             }
         }
 
