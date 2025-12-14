@@ -47,8 +47,7 @@
 
         /* --- HELP MODAL --- */
         #help-modal {
-            display: none; /* Hidden by default */
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 200;
             align-items: center; justify-content: center;
         }
@@ -62,9 +61,7 @@
         }
         .modal-content h2 { color: #00ffcc; margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
         .key { display: inline-block; background: #333; padding: 2px 6px; border-radius: 4px; color: white; font-size: 0.9em; border: 1px solid #555; }
-        .close-btn { 
-            float: right; cursor: pointer; color: #666; font-weight: bold; font-size: 20px; 
-        }
+        .close-btn { float: right; cursor: pointer; color: #666; font-weight: bold; font-size: 20px; }
         .close-btn:hover { color: white; }
 
         /* --- GRID & CURSOR --- */
@@ -89,9 +86,11 @@
         }
         .stamp.pop { transform: translate(-50%, -50%) scale(1.5); }
         
+        /* NEW SELECTION STYLE: Double Border (White + Black) ensures visibility on ALL colors */
         .stamp.selected {
-            border-color: #00ffcc;
-            box-shadow: 0 0 15px #00ffcc, inset 0 0 10px #00ffcc;
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px black, 0 0 10px rgba(0,0,0,0.5);
+            transform: translate(-50%, -50%) scale(1.1); /* Slight pop */
             z-index: 20;
         }
 
@@ -120,7 +119,7 @@
                 <li><span class="key">Ctrl</span> + <span class="key">A</span> : Select All</li>
                 <li><span class="key">Del</span> : Delete Selected</li>
             </ul>
-            <p><strong>Commands:</strong> Type <span class="key">export</span>, <span class="key">clear</span>, or vibes like <span class="key">neon</span>, <span class="key">forest</span>, or <span class="key">gold</span>.</p>
+            <p><strong>Commands:</strong> Type <span class="key">export</span>, <span class="key">clear</span>, or vibes like <span class="key">neon</span>, <span class="key">starfish</span>, or <span class="key">pine</span>.</p>
             <p style="text-align: center; margin-top: 20px; font-size: 0.8em; color: #666;">
                 [Press Enter or Esc to close]
             </p>
@@ -146,13 +145,13 @@
     <script>
         // --- DATA: SYNONYM MAP ---
         const SYNONYMS = {
-            'forest': 'forest', 'tree': 'forest', 'fern': 'forest', 'moss': 'forest', 'jungle': 'forest',
+            'forest': 'forest', 'tree': 'forest', 'fern': 'forest', 'moss': 'forest', 'jungle': 'forest', 'pine': 'forest',
             'ocean': 'water', 'sea': 'water', 'rain': 'water', 'water': 'water', 'lake': 'water', 'pool': 'water',
             'fire': 'fire', 'flame': 'fire', 'burn': 'fire', 'hot': 'fire', 'magma': 'fire',
             'ice': 'ice', 'snow': 'ice', 'glacier': 'ice', 'frozen': 'ice', 'cold': 'ice',
             'sunset': 'sunset', 'dusk': 'sunset', 'dawn': 'sunset', 'sunrise': 'sunset', 'horizon': 'sunset',
             'midnight': 'night', 'night': 'night', 'dark': 'night', 'moon': 'night', 'space': 'night',
-            'lemon': 'citrus', 'lime': 'citrus', 'citrus': 'citrus', 'sour': 'citrus',
+            'lemon': 'citrus', 'lime': 'citrus', 'citrus': 'citrus', 'sour': 'citrus', 'fruit': 'citrus',
             'berry': 'berry', 'strawberry': 'berry', 'raspberry': 'berry', 'jam': 'berry',
             'wine': 'wine', 'merlot': 'wine', 'grape': 'wine', 'burgundy': 'wine',
             'candy': 'candy', 'sweet': 'candy', 'bubblegum': 'candy', 'pink': 'candy',
@@ -166,7 +165,8 @@
             'happy': 'citrus', 'joy': 'citrus',
             'calm': 'water', 'peace': 'water',
             'love': 'love', 'romance': 'love', 'valentine': 'love', 'rose': 'love', 'heart': 'love',
-            'retro': 'retro', 'vintage': 'retro', '70s': 'retro', 'nostalgia': 'retro'
+            'retro': 'retro', 'vintage': 'retro', '70s': 'retro', 'nostalgia': 'retro',
+            'starfish': 'starfish' // Explicit override
         };
 
         function hslToHex(h, s, l) {
@@ -182,21 +182,31 @@
         // --- VIBE LOGIC ---
         function getColorsFromVibe(rawTerm) {
             let term = rawTerm;
+            
+            // 1. PLURAL HANDLER (Stemmer)
+            // If it ends in 's', check if removing 's' helps matches
             if (term.endsWith('s') && !SYNONYMS[term]) {
                 const singular = term.slice(0, -1);
+                // Check if singular is in synonyms OR matches our specific regexes
                 if (SYNONYMS[singular] || singular.match(/fish|shark|whale|dog|cat|bear|wolf|fox|synth|cyber|neon|pastel|xmas|christmas|halloween/)) {
                     term = singular;
                 }
             }
+
             let category = SYNONYMS[term];
+
+            // 2. Fallback Logic (Regex) if not in Dictionary
             if (!category) {
-                if (term.match(/fish|shark|whale/)) category = 'water';
+                // SPECIAL CASE: Starfish (Do NOT map to 'water')
+                if (term === 'starfish') category = 'starfish';
+                else if (term.match(/fish|shark|whale/)) category = 'water';
                 else if (term.match(/dog|cat|bear|wolf|fox/)) category = 'animal';
                 else if (term.match(/synth|cyber|neon/)) category = 'neon';
                 else if (term.match(/pastel|baby/)) category = 'pastel';
                 else if (term.match(/xmas|christmas/)) category = 'xmas';
                 else if (term.match(/halloween/)) category = 'halloween';
             }
+
             const colors = [];
             const count = 5; 
             const add = (hMin, hMax, sMin, sMax, lMin, lMax) => {
@@ -230,6 +240,14 @@
                 case 'pastel': for(let i=0; i<count; i++) add(0, 360, 30, 60, 80, 95); break;
                 case 'xmas': add(350, 360, 80, 100, 40, 60); add(120, 150, 60, 90, 30, 50); break;
                 case 'halloween': add(20, 40, 90, 100, 40, 60); add(270, 280, 60, 90, 20, 40); break;
+                
+                // NEW: STARFISH (Pink/Orange/Coral)
+                case 'starfish': 
+                    add(330, 360, 60, 90, 60, 80); // Pink
+                    add(10, 30, 70, 100, 50, 70);  // Orange
+                    add(0, 15, 60, 80, 60, 80);    // Coral
+                    break;
+
                 default: return null;
             }
             return colors;
@@ -252,7 +270,7 @@
         const offsetLeft = 20; const offsetBottom = 50; 
 
         const placeholders = [
-            "try 'lemons', 'rust', or 'trees'...",
+            "try 'fruits', 'starfish', or 'pine'...",
             "feeling 'royal'? try 'wine'?",
             "try 'retro', 'gold', or 'love'...",
             "type 'help' for manual..."
@@ -299,21 +317,12 @@
 
         // --- INPUT HANDLING ---
         document.addEventListener('keydown', (e) => {
-            // SHORTCUTS (CMD/CTRL)
             const cmd = e.metaKey || e.ctrlKey;
             
             // UNDO (Cmd+Z)
-            if (cmd && e.key === 'z' && !e.shiftKey) {
-                e.preventDefault();
-                undoStamp();
-                return;
-            }
+            if (cmd && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undoStamp(); return; }
             // REDO (Cmd+Shift+Z or Cmd+Y)
-            if ((cmd && e.shiftKey && e.key === 'z') || (cmd && e.key === 'y')) {
-                e.preventDefault();
-                redoStamp();
-                return;
-            }
+            if ((cmd && e.shiftKey && e.key === 'z') || (cmd && e.key === 'y')) { e.preventDefault(); redoStamp(); return; }
             // SELECT ALL (Cmd+A)
             if (cmd && e.key === 'a') {
                 e.preventDefault();
@@ -321,37 +330,23 @@
                 return;
             }
             // HELP (?)
-            if (e.key === '?' && document.activeElement !== cmdInput) {
-                toggleHelp();
-                return;
-            }
-            // ESCAPE (Close Modal or Deselect)
+            if (e.key === '?' && document.activeElement !== cmdInput) { toggleHelp(); return; }
+            // ESCAPE
             if (e.key === 'Escape') {
-                if (modal.classList.contains('open')) {
-                    toggleHelp();
-                } else {
-                    document.querySelectorAll('.stamp.selected').forEach(s => s.classList.remove('selected'));
-                }
+                if (modal.classList.contains('open')) toggleHelp();
+                else document.querySelectorAll('.stamp.selected').forEach(s => s.classList.remove('selected'));
                 return;
             }
             // ENTER (Close Modal)
-            if (e.key === 'Enter' && modal.classList.contains('open')) {
-                toggleHelp();
-                return;
-            }
+            if (e.key === 'Enter' && modal.classList.contains('open')) { toggleHelp(); return; }
 
             if (document.activeElement === cmdInput) return;
 
-            // DELETE SELECTED STAMP
+            // DELETE
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 const selected = document.querySelectorAll('.stamp.selected');
                 if (selected.length > 0) {
-                    selected.forEach(s => {
-                        // We remove from DOM but leave in history stack slightly messy?
-                        // For a robust undo, we'd need to track "deletion events".
-                        // For this simple playground, we will just remove from DOM.
-                        s.remove();
-                    });
+                    selected.forEach(s => s.remove());
                     return; 
                 }
                 undoStamp(); 
@@ -378,25 +373,25 @@
         document.addEventListener('click', (e) => {
             if (e.target.closest('#command-bar') || e.target.closest('#help-modal')) return;
             
-            // Close modal if clicking background
-            if (modal.classList.contains('open')) {
-                toggleHelp();
-                return;
-            }
+            if (modal.classList.contains('open')) { toggleHelp(); return; }
 
             if (e.target.classList.contains('stamp')) {
-                // If Cmd/Ctrl clicked, toggle selection (multi-select)
+                // Toggle Select
                 if (e.metaKey || e.ctrlKey) {
                     e.target.classList.toggle('selected');
                 } else {
-                    // Single select
-                    document.querySelectorAll('.stamp.selected').forEach(s => s.classList.remove('selected'));
-                    e.target.classList.add('selected');
+                    // Check if already selected
+                    if (e.target.classList.contains('selected')) {
+                        e.target.classList.remove('selected');
+                    } else {
+                        // Deselect others and select this
+                        document.querySelectorAll('.stamp.selected').forEach(s => s.classList.remove('selected'));
+                        e.target.classList.add('selected');
+                    }
                 }
                 return;
             }
 
-            // Click BG: Deselect All & Stamp
             document.querySelectorAll('.stamp.selected').forEach(s => s.classList.remove('selected'));
             createStamp(hue, light, sat);
             const pos = dataToPos(hue, light);
@@ -439,18 +434,14 @@
         }
 
         function createStamp(h, l, s) {
-            // Clearing redo stack because we branched history
             redoStack.length = 0;
-
             const stamp = document.createElement('div');
             stamp.classList.add('stamp');
             const pos = dataToPos(h, l);
             stamp.style.left = pos.x + 'px'; stamp.style.top = pos.y + 'px';
             stamp.style.backgroundColor = `hsl(${h}, ${s}%, ${l}%)`;
-            
             const hex = hslToHex(h, s, l);
             stamp.setAttribute('data-hex', hex);
-            
             document.body.appendChild(stamp);
             stampHistory.push(stamp);
             requestAnimationFrame(() => stamp.classList.add('pop'));
@@ -459,10 +450,8 @@
         function undoStamp() {
             if (stampHistory.length > 0) {
                 const last = stampHistory.pop();
-                redoStack.push(last); // Save for redo
-                if (document.body.contains(last)) {
-                    last.style.display = 'none'; // Hide instead of remove for easier redo
-                }
+                redoStack.push(last); 
+                if (document.body.contains(last)) last.style.display = 'none';
             }
         }
 
@@ -476,7 +465,6 @@
         }
 
         function exportColors() {
-            // Export visible stamps only
             const stamps = Array.from(document.querySelectorAll('.stamp')).filter(s => s.style.display !== 'none');
             if (stamps.length === 0) return;
 
