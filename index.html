@@ -5,47 +5,89 @@
         body {
             margin: 0;
             overflow: hidden;
-            font-family: 'Courier New', Courier, monospace; /* Monospace for data feel */
-            cursor: none; /* Hide default cursor, we use crosshair */
+            font-family: 'Courier New', Courier, monospace;
+            cursor: none; /* We use the crosshair */
             background-color: #808080;
-            transition: background-color 0.05s linear;
+            user-select: none; /* Stop text highlighting while clicking */
         }
 
-        /* The Grid: Helps you see that the screen is a chart */
+        /* --- THE AXES --- */
+        
+        /* Left Axis: Lightness (White to Black) */
+        .axis-y {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 20px;
+            background: linear-gradient(to bottom, white, black);
+            z-index: 2;
+            border-right: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        /* Bottom Axis: Hue (The Spectrum) */
+        .axis-x {
+            position: absolute;
+            left: 20px; /* Start after the Y axis */
+            right: 0;
+            bottom: 0;
+            height: 20px;
+            /* The standard CSS Hue Rainbow */
+            background: linear-gradient(to right, 
+                hsl(0, 100%, 50%), 
+                hsl(60, 100%, 50%), 
+                hsl(120, 100%, 50%), 
+                hsl(180, 100%, 50%), 
+                hsl(240, 100%, 50%), 
+                hsl(300, 100%, 50%), 
+                hsl(360, 100%, 50%)
+            );
+            z-index: 2;
+            border-top: 1px solid rgba(255,255,255,0.3);
+        }
+
+        /* --- THE GRID & HUD --- */
+
         .grid {
             position: absolute;
-            width: 100vw;
-            height: 100vh;
+            top: 0; left: 20px; right: 0; bottom: 20px; /* Respect axes */
             background-image: 
                 linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-            background-size: 50px 50px; /* The size of the grid squares */
+            background-size: 50px 50px;
             pointer-events: none;
         }
 
-        /* The HUD: Now shows live numbers to reinforce the connection */
         #hud {
             position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: #00ffcc; /* Sci-fi green */
+            background: rgba(0, 0, 0, 0.85);
+            color: #00ffcc;
             padding: 15px;
             border-radius: 4px;
-            pointer-events: none;
-            z-index: 10;
+            cursor: pointer; /* Suggests clickable */
+            z-index: 100;
+            width: 200px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            font-size: 13px;
+            border: 1px solid #00ffcc;
         }
 
-        /* Custom Crosshair Cursor */
+        /* HUD Positioning Classes */
+        .pos-tl { top: 30px; left: 40px; }
+        .pos-tr { top: 30px; right: 30px; }
+        .pos-br { bottom: 40px; right: 30px; }
+        .pos-bl { bottom: 40px; left: 40px; }
+
+        /* --- CURSOR & STAMPS --- */
+
         #cursor {
             position: absolute;
             pointer-events: none;
-            transform: translate(-50%, -50%);
             z-index: 5;
         }
-        /* The horizontal and vertical lines of the crosshair */
-        .hair-x { position: absolute; width: 100vw; height: 1px; background: rgba(255,255,255,0.5); left: -50vw; top: 0; }
-        .hair-y { position: absolute; width: 1px; height: 100vh; background: rgba(255,255,255,0.5); left: 0; top: -50vh; }
+        /* Crosshairs go all the way to the axes */
+        .hair-x { position: absolute; width: 100vw; height: 1px; background: rgba(255,255,255,0.4); left: -100vw; top: 0; }
+        .hair-y { position: absolute; width: 1px; height: 100vh; background: rgba(255,255,255,0.4); left: 0; top: -100vh; }
 
         .stamp {
             position: absolute;
@@ -53,28 +95,26 @@
             height: 50px;
             border-radius: 50%;
             border: 2px solid white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             transform: translate(-50%, -50%);
             z-index: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            color: white;
-            text-shadow: 0 1px 2px black;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
     </style>
 </head>
 <body>
 
+    <div class="axis-y"></div>
+    <div class="axis-x"></div>
+
     <div class="grid"></div>
 
-    <div id="hud">
-        <strong>Color Chart Mode</strong><br><br>
-        ↔ X-Axis: HUE <span id="val-hue">0</span>°<br>
-        ↕ Y-Axis: LIGHT <span id="val-light">50</span>%<br>
-        ⟳ Scroll: SAT <span id="val-sat">100</span>%<br><br>
-        <em>Try Arrow Keys for precision!</em>
+    <div id="hud" class="pos-tl" onclick="moveHud()">
+        <strong>Color Graph Mode</strong><br>
+        <span style="font-size:0.8em; color:#ccc;">(Click this box to move it)</span><br><br>
+        ↔ HUE: <span id="val-hue">0</span>°<br>
+        ↕ LIGHT: <span id="val-light">50</span>%<br>
+        ⟳ SAT: <span id="val-sat">100</span>%<br><br>
+        <em>[Space] to Stamp</em>
     </div>
 
     <div id="cursor">
@@ -88,96 +128,118 @@
         let sat = 100;
         let light = 50;
         
-        // Screen dimensions for mapping
-        let width = window.innerWidth;
-        let height = window.innerHeight;
-
+        // Offset for the axes (20px)
+        const offset = 20;
+        
+        // Elements
         const cursor = document.getElementById('cursor');
-        const displayHue = document.getElementById('val-hue');
-        const displayLight = document.getElementById('val-light');
-        const displaySat = document.getElementById('val-sat');
+        const hud = document.getElementById('hud');
 
-        // Update the visual state
+        function getDimensions() {
+            return {
+                w: window.innerWidth - offset, // Usable width
+                h: window.innerHeight - offset // Usable height
+            };
+        }
+
         function render() {
-            // Update Background
             document.body.style.backgroundColor = `hsl(${hue}, ${sat}%, ${light}%)`;
             
-            // Update Numbers
-            displayHue.innerText = hue;
-            displayLight.innerText = light;
-            displaySat.innerText = sat;
+            document.getElementById('val-hue').innerText = hue;
+            document.getElementById('val-light').innerText = light;
+            document.getElementById('val-sat').innerText = sat;
 
-            // Move Crosshair to match the data
-            // We reverse-engineer the position from the values
-            // x = (hue / 360) * width
-            // y = ((100 - light) / 100) * height
-            const x = (hue / 360) * width;
-            const y = ((100 - light) / 100) * height;
+            // Math to position crosshair
+            const dims = getDimensions();
+            // x position starts after the 20px left axis
+            const x = offset + ((hue / 360) * dims.w);
+            // y position accounts for the fact that 0% light is at the bottom (height)
+            const y = ((100 - light) / 100) * dims.h;
             
             cursor.style.left = x + 'px';
             cursor.style.top = y + 'px';
         }
 
-        // 1. MOUSE CONTROLS
-        document.addEventListener('mousemove', (e) => {
-            // Only update if we aren't using keyboard recently (optional, but keeps it simple)
-            const xPercent = e.clientX / width;
-            const yPercent = e.clientY / height;
+        // --- CONTROLS ---
 
-            hue = Math.round(xPercent * 360);
-            light = Math.round((1 - yPercent) * 100); // Invert Y so up is light
+        // 1. Mouse Move
+        document.addEventListener('mousemove', (e) => {
+            const dims = getDimensions();
+            
+            // Clamp mouse inside the usable area (ignoring the axis bars)
+            let mouseX = Math.max(0, e.clientX - offset);
+            let mouseY = Math.min(dims.h, e.clientY); // Don't go below bottom axis
+
+            hue = Math.round((mouseX / dims.w) * 360);
+            // Clamp hue to 0-360
+            hue = Math.max(0, Math.min(360, hue));
+
+            // Invert Y for lightness
+            light = Math.round((1 - (mouseY / dims.h)) * 100);
+            light = Math.max(0, Math.min(100, light));
+
             render();
         });
 
-        // 2. SCROLL (Saturation)
+        // 2. Scroll for Saturation
         document.addEventListener('wheel', (e) => {
             if (e.deltaY > 0) sat = Math.max(0, sat - 5);
             else sat = Math.min(100, sat + 5);
             render();
         });
 
-        // 3. KEYBOARD CONTROLS (The Arrow Keys!)
+        // 3. Arrow Keys
         document.addEventListener('keydown', (e) => {
-            const step = 2; // How fast values change with keys
-
+            const step = 2;
+            
             if (e.key === "ArrowRight") hue = (hue + step) % 360;
             if (e.key === "ArrowLeft") hue = (hue - step + 360) % 360;
-            
             if (e.key === "ArrowUp") light = Math.min(100, light + step);
             if (e.key === "ArrowDown") light = Math.max(0, light - step);
 
+            // 4. Spacebar or Enter to Stamp
+            if (e.code === "Space" || e.code === "Enter") {
+                createStamp();
+            }
+
             render();
         });
 
-        // 4. CLICK TO STAMP
+        // 5. Click to Stamp (only if not clicking HUD)
         document.addEventListener('click', (e) => {
+            // If we clicked the HUD, don't stamp
+            if (e.target.closest('#hud')) return;
+            createStamp();
+        });
+
+        // --- UTILS ---
+
+        function createStamp() {
             const stamp = document.createElement('div');
             stamp.classList.add('stamp');
             
-            // Calculate position based on current values
-            const x = (hue / 360) * width;
-            const y = ((100 - light) / 100) * height;
-
-            stamp.style.left = x + 'px';
-            stamp.style.top = y + 'px';
+            // Current cursor position
+            stamp.style.left = cursor.style.left;
+            stamp.style.top = cursor.style.top;
             stamp.style.backgroundColor = document.body.style.backgroundColor;
-            
-            // Optional: Label the stamp with its Hue?
-            // stamp.innerText = hue + "°"; 
 
             document.body.appendChild(stamp);
-        });
+        }
 
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            render();
-        });
+        // HUD Corner Hopper
+        const positions = ['pos-tl', 'pos-tr', 'pos-br', 'pos-bl'];
+        let currentPos = 0;
 
-        // Initial Render
+        function moveHud() {
+            hud.classList.remove(positions[currentPos]);
+            currentPos = (currentPos + 1) % positions.length;
+            hud.classList.add(positions[currentPos]);
+        }
+
+        // Handle Resize
+        window.addEventListener('resize', render);
+
         render();
-
     </script>
 </body>
 </html>
