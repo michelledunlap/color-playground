@@ -7,12 +7,12 @@
             overflow: hidden;
             font-family: 'Courier New', Courier, monospace;
             cursor: none; 
-            background-color: #222; /* Dark start */
+            background-color: #222;
             color: white;
             user-select: none;
         }
 
-        /* --- THE AXES --- */
+        /* --- AXES --- */
         .axis-y {
             position: fixed; left: 0; top: 0; bottom: 50px; width: 20px;
             background: linear-gradient(to bottom, white, black);
@@ -33,80 +33,47 @@
 
         /* --- COMMAND BAR --- */
         #command-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 50px;
-            background: #000;
-            border-top: 1px solid #444;
-            display: flex;
-            align-items: center;
-            padding-left: 20px;
-            box-sizing: border-box;
-            z-index: 100;
-            cursor: text;
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 50px;
+            background: #000; border-top: 1px solid #444;
+            display: flex; align-items: center; padding-left: 20px;
+            box-sizing: border-box; z-index: 100; cursor: text;
         }
         
-        #cmd-prefix {
-            color: #00ffcc;
-            margin-right: 10px;
-            font-weight: bold;
-        }
-
+        #cmd-prefix { color: #00ffcc; margin-right: 10px; font-weight: bold; }
         #cmd-input {
-            background: transparent;
-            border: none;
-            color: white;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 16px;
-            width: 100%;
-            outline: none;
-            text-transform: lowercase;
+            background: transparent; border: none; color: white;
+            font-family: 'Courier New', Courier, monospace; font-size: 16px;
+            width: 100%; outline: none; text-transform: lowercase;
         }
 
         /* --- GRID & HUD --- */
         .grid {
-            position: absolute;
-            top: 0; left: 20px; right: 0; bottom: 70px;
+            position: absolute; top: 0; left: 20px; right: 0; bottom: 70px;
             background-image: 
                 linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-            background-size: 50px 50px;
-            pointer-events: none;
+            background-size: 50px 50px; pointer-events: none;
         }
 
         #hud {
-            position: fixed;
-            top: 20px; right: 20px;
-            text-align: right;
-            pointer-events: none;
-            color: rgba(255,255,255,0.7);
-            z-index: 10;
+            position: fixed; top: 20px; right: 20px; text-align: right;
+            pointer-events: none; color: rgba(255,255,255,0.7); z-index: 10;
         }
 
         /* --- CURSOR & STAMPS --- */
         .hair-x { 
             position: fixed; left: 20px; right: 0; height: 1px; 
-            background: rgba(255,255,255,0.4); 
-            pointer-events: none; z-index: 5;
-            transition: top 0.1s ease-out; /* Smooth auto-movement */
+            background: rgba(255,255,255,0.4); pointer-events: none; z-index: 5;
         }
-
         .hair-y { 
             position: fixed; top: 0; bottom: 70px; width: 1px; 
-            background: rgba(255,255,255,0.4); 
-            pointer-events: none; z-index: 5;
-            transition: left 0.1s ease-out; /* Smooth auto-movement */
+            background: rgba(255,255,255,0.4); pointer-events: none; z-index: 5;
         }
 
         .stamp {
-            position: absolute;
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            border: 2px solid white;
-            transform: translate(-50%, -50%);
-            z-index: 1;
+            position: absolute; width: 40px; height: 40px;
+            border-radius: 50%; border: 2px solid white;
+            transform: translate(-50%, -50%); z-index: 1;
             box-shadow: 0 2px 5px rgba(0,0,0,0.5);
             transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
@@ -130,70 +97,39 @@
 
     <div id="command-bar" onclick="document.getElementById('cmd-input').focus()">
         <span id="cmd-prefix">user@colors:~$</span>
-        <input id="cmd-input" type="text" placeholder="type 'winter', 'neon', or 'forest'..." autocomplete="off">
+        <input id="cmd-input" type="text" placeholder="type 'winter', 'neon', or 'clear'..." autocomplete="off">
     </div>
 
     <script>
-        // --- DATA: THE COLOR DICTIONARY ---
+        // --- DATA ---
         const PALETTES = {
-            'winter': [
-                {h: 200, s: 80, l: 90}, // Ice Blue
-                {h: 210, s: 60, l: 40}, // Deep Freeze
-                {h: 190, s: 20, l: 95}, // Snow
-                {h: 220, s: 40, l: 60}  // Slate
-            ],
-            'summer': [
-                {h: 50, s: 100, l: 60}, // Sun Yellow
-                {h: 180, s: 80, l: 50}, // Pool Cyan
-                {h: 340, s: 90, l: 60}, // Watermelon
-                {h: 30, s: 100, l: 70}  // Sand
-            ],
-            'forest': [
-                {h: 120, s: 40, l: 25}, // Pine
-                {h: 30, s: 60, l: 30},  // Bark
-                {h: 90, s: 50, l: 40},  // Moss
-                {h: 45, s: 30, l: 80}   // Sunlight
-            ],
-            'neon': [
-                {h: 300, s: 100, l: 50}, // Magenta
-                {h: 120, s: 100, l: 50}, // Lime
-                {h: 180, s: 100, l: 50}, // Cyan
-                {h: 60, s: 100, l: 50}   // Yellow
-            ],
-            'pastel': [
-                {h: 350, s: 100, l: 85}, // Baby Pink
-                {h: 200, s: 100, l: 85}, // Baby Blue
-                {h: 60, s: 100, l: 85},  // Pale Yellow
-                {h: 120, s: 100, l: 85}  // Mint
-            ],
-            'cyberpunk': [
-                {h: 280, s: 90, l: 15},  // Dark Purple
-                {h: 320, s: 100, l: 50}, // Hot Pink
-                {h: 190, s: 100, l: 50}, // Cyan
-                {h: 60, s: 100, l: 60}   // Acid Yellow
-            ]
+            'winter': [{h: 200, s: 80, l: 90}, {h: 210, s: 60, l: 40}, {h: 190, s: 20, l: 95}, {h: 220, s: 40, l: 60}],
+            'summer': [{h: 50, s: 100, l: 60}, {h: 180, s: 80, l: 50}, {h: 340, s: 90, l: 60}, {h: 30, s: 100, l: 70}],
+            'forest': [{h: 120, s: 40, l: 25}, {h: 30, s: 60, l: 30}, {h: 90, s: 50, l: 40}, {h: 45, s: 30, l: 80}],
+            'neon':   [{h: 300, s: 100, l: 50}, {h: 120, s: 100, l: 50}, {h: 180, s: 100, l: 50}, {h: 60, s: 100, l: 50}],
+            'pastel': [{h: 350, s: 100, l: 85}, {h: 200, s: 100, l: 85}, {h: 60, s: 100, l: 85}, {h: 120, s: 100, l: 85}],
+            'cyberpunk': [{h: 280, s: 90, l: 15}, {h: 320, s: 100, l: 50}, {h: 190, s: 100, l: 50}, {h: 60, s: 100, l: 60}]
         };
 
         // State
         let hue = 180, sat = 100, light = 50;
-        let isAutoPlaying = false; // To block mouse while animating
+        let isAutoPlaying = false; 
         
+        // Input Tracking (The "Game Loop" variables)
+        const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, Space: false };
+        let lastStampPos = { x: -999, y: -999 }; // To prevent duplicate stamps
+
         // DOM Elements
         const hairX = document.querySelector('.hair-x');
         const hairY = document.querySelector('.hair-y');
         const cmdInput = document.getElementById('cmd-input');
-        const offsetLeft = 20; // Y-axis width
-        const offsetBottom = 50; // X-axis height (and command bar)
+        const offsetLeft = 20; 
+        const offsetBottom = 50; 
 
-        // Helper: Get usable screen size
         function getDims() {
-            return {
-                w: window.innerWidth - offsetLeft,
-                h: window.innerHeight - offsetBottom
-            };
+            return { w: window.innerWidth - offsetLeft, h: window.innerHeight - offsetBottom };
         }
 
-        // Helper: Convert Data to Screen Position
         function dataToPos(h, l) {
             const dims = getDims();
             return {
@@ -202,12 +138,9 @@
             };
         }
 
-        // RENDER LOOP
         function render() {
-            // Background Color
+            // Update Background & Text
             document.body.style.backgroundColor = `hsl(${hue}, ${sat}%, ${light}%)`;
-            
-            // HUD Numbers
             document.getElementById('val-hue').innerText = Math.round(hue);
             document.getElementById('val-light').innerText = Math.round(light);
             document.getElementById('val-sat').innerText = Math.round(sat);
@@ -218,105 +151,156 @@
             hairY.style.left = pos.x + 'px';
         }
 
-        // --- INPUT HANDLING ---
+        // --- NEW: THE GAME LOOP ---
+        function updateLoop() {
+            if (isAutoPlaying) {
+                requestAnimationFrame(updateLoop);
+                return;
+            }
 
-        // 1. Mouse Move (Only if not animating)
+            // 1. Handle Movement Keys
+            const step = 2; // Speed
+            if (keys.ArrowRight) hue = (hue + step) % 360;
+            if (keys.ArrowLeft) hue = (hue - step + 360) % 360;
+            if (keys.ArrowUp) light = Math.min(100, light + step);
+            if (keys.ArrowDown) light = Math.max(0, light - step);
+
+            // 2. Handle Spacebar (Painting)
+            if (keys.Space) {
+                const currentPos = dataToPos(hue, light);
+                
+                // Calculate distance from last stamp
+                const dx = currentPos.x - lastStampPos.x;
+                const dy = currentPos.y - lastStampPos.y;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+
+                // Only stamp if we have moved at least 30 pixels (or whatever feels good)
+                if (distance > 30) {
+                    createStamp(hue, light, sat);
+                    lastStampPos = { x: currentPos.x, y: currentPos.y };
+                }
+            }
+
+            // 3. Render and Repeat
+            render();
+            requestAnimationFrame(updateLoop);
+        }
+
+        // Start the loop
+        requestAnimationFrame(updateLoop);
+
+
+        // --- INPUT LISTENERS ---
+
+        // Track Keys Down/Up
+        document.addEventListener('keydown', (e) => {
+            // If typing in command bar, ignore game keys
+            if (document.activeElement === cmdInput) return;
+
+            if (keys.hasOwnProperty(e.code) || e.code === "Space") {
+                keys[e.code] = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (keys.hasOwnProperty(e.code) || e.code === "Space") {
+                keys[e.code] = false;
+            }
+        });
+
+        // Mouse Move
         document.addEventListener('mousemove', (e) => {
             if(isAutoPlaying) return; 
-
             const dims = getDims();
-            // Clamp mouse to usable area
             let mouseX = Math.max(0, e.clientX - offsetLeft);
             let mouseY = Math.min(dims.h, e.clientY);
 
             hue = (mouseX / dims.w) * 360;
             light = (1 - (mouseY / dims.h)) * 100;
-            
-            // Clamp
             hue = Math.max(0, Math.min(360, hue));
             light = Math.max(0, Math.min(100, light));
-
-            render();
         });
 
-        // 2. Scroll (Saturation)
+        // Scroll
         document.addEventListener('wheel', (e) => {
             if (e.deltaY > 0) sat = Math.max(0, sat - 5);
             else sat = Math.min(100, sat + 5);
-            render();
         });
 
-        // 3. Click to Stamp (Ignore if clicking command bar)
+        // Click to Stamp
         document.addEventListener('click', (e) => {
             if (e.target.closest('#command-bar')) return;
             createStamp(hue, light, sat);
+            // Update last pos so holding space immediately after doesn't double-stamp
+            const pos = dataToPos(hue, light);
+            lastStampPos = { x: pos.x, y: pos.y };
         });
 
-        // 4. Command Bar Logic
+        // Command Bar
         cmdInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const query = cmdInput.value.toLowerCase().trim();
-                if (PALETTES[query]) {
+                
+                // COMMANDS
+                if (query === 'clear' || query === 'reset') {
+                    document.querySelectorAll('.stamp').forEach(el => el.remove());
+                } 
+                // PALETTES
+                else if (PALETTES[query]) {
                     playPalette(PALETTES[query]);
-                    cmdInput.value = ""; // Clear input
-                    cmdInput.blur(); // Unfocus so you can use mouse again
-                } else {
-                    // Shake effect for "Not Found"
+                } 
+                // ERROR
+                else {
                     const bar = document.getElementById('command-bar');
                     bar.style.backgroundColor = '#522';
                     setTimeout(() => bar.style.backgroundColor = '#000', 200);
                 }
+                
+                cmdInput.value = "";
+                cmdInput.blur();
             }
         });
 
-        // --- UTILS & ANIMATION ---
-
+        // --- UTILS ---
         function createStamp(h, l, s) {
             const stamp = document.createElement('div');
             stamp.classList.add('stamp');
             const pos = dataToPos(h, l);
-            
             stamp.style.left = pos.x + 'px';
             stamp.style.top = pos.y + 'px';
             stamp.style.backgroundColor = `hsl(${h}, ${s}%, ${l}%)`;
-            
             document.body.appendChild(stamp);
-            
-            // Pop animation
             requestAnimationFrame(() => stamp.classList.add('pop'));
         }
 
-        // The "Ghost in the Machine" - Auto-moves cursor to coordinates
         function playPalette(colors) {
             isAutoPlaying = true;
             let i = 0;
-
             function next() {
                 if (i >= colors.length) {
                     isAutoPlaying = false;
                     return;
                 }
-
                 const target = colors[i];
-                // Smoothly set global state variables
-                hue = target.h;
-                light = target.l;
-                sat = target.s;
-                render(); // Update visual crosshair location
+                hue = target.h; light = target.l; sat = target.s;
+                
+                // Manually trigger render during auto-play since loop is paused/bypassed
+                const pos = dataToPos(hue, light);
+                hairX.style.transition = 'top 0.3s ease-out'; // Add smoothing for playback
+                hairY.style.transition = 'left 0.3s ease-out';
+                render();
 
-                // Wait a tiny bit for the eye to catch up, then stamp
                 setTimeout(() => {
                     createStamp(hue, light, sat);
                     i++;
-                    setTimeout(next, 400); // Wait before moving to next color
+                    setTimeout(next, 400);
                 }, 300);
             }
+            // Reset transition after playing
+            hairX.style.transition = 'none';
+            hairY.style.transition = 'none';
             next();
         }
-
-        // Init
-        render();
-
     </script>
 </body>
 </html>
