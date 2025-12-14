@@ -31,6 +31,7 @@
             background: #000; border-top: 1px solid #444;
             display: flex; align-items: center; padding-left: 20px;
             box-sizing: border-box; z-index: 100; cursor: text;
+            transition: background-color 0.2s;
         }
         #cmd-prefix { color: #00ffcc; margin-right: 10px; font-weight: bold; }
         #cmd-input {
@@ -43,16 +44,6 @@
             position: fixed; top: 20px; right: 20px; text-align: right;
             pointer-events: none; color: rgba(255,255,255,0.7); z-index: 10;
         }
-
-        #export-btn {
-            position: fixed; top: 20px; left: 40px; 
-            background: #333; color: #fff; border: 1px solid #666;
-            padding: 8px 12px; cursor: pointer; z-index: 100;
-            font-family: inherit; font-size: 12px;
-            transition: all 0.2s;
-        }
-        #export-btn:hover { background: #00ffcc; color: #000; border-color: #00ffcc; }
-        #export-btn:active { transform: scale(0.95); }
 
         /* --- GRID & CURSOR --- */
         .grid {
@@ -85,25 +76,20 @@
         HUE <span id="val-hue">0</span>°<br>LGT <span id="val-light">50</span>%<br>SAT <span id="val-sat">100</span>%
     </div>
 
-    <button id="export-btn" onclick="exportColors()">EXPORT PALETTE</button>
-
     <div class="hair-x"></div>
     <div class="hair-y"></div>
 
     <div id="command-bar" onclick="document.getElementById('cmd-input').focus()">
         <span id="cmd-prefix">user@colors:~$</span>
-        <input id="cmd-input" type="text" placeholder="type 'jellyfish', 'cozy', 'christmas'..." autocomplete="off">
+        <input id="cmd-input" type="text" autocomplete="off">
     </div>
 
     <script>
-        // --- THE INFINITE VIBE ENGINE ---
-        // Instead of hardcoded lists, we generate colors based on rules.
+        // --- LOGIC ENGINE ---
         
         function getColorsFromVibe(term) {
             const colors = [];
-            const count = 5; // How many dots to generate per command
-
-            // Helper to add a random range
+            const count = 5; 
             const add = (hMin, hMax, sMin, sMax, lMin, lMax) => {
                 const h = Math.floor(Math.random() * (hMax - hMin + 1)) + hMin;
                 const s = Math.floor(Math.random() * (sMax - sMin + 1)) + sMin;
@@ -111,77 +97,75 @@
                 colors.push({h, s, l});
             };
 
-            // 1. WATER / OCEAN (Jellyfish, Sea, Ocean, Rain)
+            // WATER / OCEAN 
             if (term.match(/fish|sea|ocean|water|rain|pool|beach|shark|whale/)) {
-                // Mix of cyans (180), blues (240), and purples (280)
                 for(let i=0; i<count; i++) add(160, 260, 50, 100, 40, 80);
-                // If specific creature, maybe add a highlight?
-                if(term.includes('jelly')) add(300, 340, 80, 100, 60, 90); // Pinkish bioluminescence
+                if(term.includes('jelly')) add(300, 340, 80, 100, 60, 90); 
             }
-            
-            // 2. NATURE / FOREST (Tree, Plant, Fern, Forest, Moss)
+            // NATURE / FOREST 
             else if (term.match(/forest|tree|plant|fern|moss|garden|nature|frog/)) {
-                for(let i=0; i<count; i++) add(80, 160, 30, 70, 20, 60); // Greens
-                add(20, 50, 40, 60, 20, 40); // One brown/earth tone
+                for(let i=0; i<count; i++) add(80, 160, 30, 70, 20, 60); 
+                add(20, 50, 40, 60, 20, 40); 
             }
-
-            // 3. WARM / COZY (Fire, Autumn, Cozy, Coffee, Latte, Home)
+            // WARM / COZY 
             else if (term.match(/fire|autumn|cozy|warm|coffee|latte|home|bread|wood/)) {
-                for(let i=0; i<count; i++) add(10, 50, 40, 80, 40, 70); // Oranges/Browns
-                add(0, 20, 60, 90, 30, 50); // Deep red/warmth
+                for(let i=0; i<count; i++) add(10, 50, 40, 80, 40, 70); 
+                add(0, 20, 60, 90, 30, 50); 
             }
-
-            // 4. ANIMALS (Dog, Cat, Bear, Wolf) -> Earth tones
+            // ANIMALS 
             else if (term.match(/dog|cat|bear|wolf|fox|fur/)) {
-                for(let i=0; i<count; i++) add(15, 45, 20, 60, 30, 80); // Browns, Tans, Creams
-                if (term.includes('fox')) add(10, 25, 70, 90, 40, 60); // Fox Orange
+                for(let i=0; i<count; i++) add(15, 45, 20, 60, 30, 80); 
+                if (term.includes('fox')) add(10, 25, 70, 90, 40, 60); 
             }
-
-            // 5. HOLIDAYS (Christmas, Valentine, Halloween)
+            // HOLIDAYS 
             else if (term.includes('christmas') || term.includes('xmas')) {
-                add(350, 360, 80, 100, 40, 60); // Red
-                add(0, 10, 80, 100, 40, 60);    // Red
-                add(120, 150, 60, 90, 30, 50);  // Green
-                add(120, 150, 60, 90, 30, 50);  // Green
-                add(40, 60, 80, 100, 50, 80);   // Gold
+                add(350, 360, 80, 100, 40, 60); add(0, 10, 80, 100, 40, 60);    
+                add(120, 150, 60, 90, 30, 50);  add(120, 150, 60, 90, 30, 50);  
+                add(40, 60, 80, 100, 50, 80);   
             }
             else if (term.includes('halloween')) {
-                add(20, 40, 90, 100, 40, 60); // Orange
-                add(260, 280, 60, 90, 20, 40); // Purple
-                add(0, 0, 0, 0, 10, 20);      // Black/Grey
+                add(20, 40, 90, 100, 40, 60); add(260, 280, 60, 90, 20, 40); add(0, 0, 0, 0, 10, 20);      
             }
-
-            // 6. DEFAULT MOODS
+            // DEFAULT MOODS
             else if (term === 'neon') for(let i=0; i<count; i++) add(0, 360, 90, 100, 50, 60);
             else if (term === 'pastel') for(let i=0; i<count; i++) add(0, 360, 30, 60, 80, 95);
             else if (term === 'winter') for(let i=0; i<count; i++) add(180, 240, 20, 60, 70, 95);
             else if (term === 'summer') for(let i=0; i<count; i++) add(0, 60, 70, 100, 50, 80);
 
-            // If nothing matched, return null to trigger the "Error Buzzer"
             return colors.length > 0 ? colors : null;
         }
 
 
-        // --- MAIN APP LOGIC ---
-        
-        // State & Setup
+        // --- MAIN STATE ---
         let hue = 180, sat = 100, light = 50;
         let isAutoPlaying = false; 
         const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, Space: false };
         let lastStampPos = { x: -999, y: -999 };
+        
+        // Stamp History (for Undo)
+        const stampHistory = [];
 
         const hairX = document.querySelector('.hair-x');
         const hairY = document.querySelector('.hair-y');
         const cmdInput = document.getElementById('cmd-input');
         const offsetLeft = 20; const offsetBottom = 50; 
 
+        // --- RANDOM PLACEHOLDER ON LOAD ---
+        const placeholders = [
+            "try 'winter', 'neon', or 'forest'...",
+            "feeling 'cozy'? maybe 'pastel'?",
+            "try 'jellyfish', 'fox', or 'fire'...",
+            "type 'help' for commands..."
+        ];
+        cmdInput.placeholder = placeholders[Math.floor(Math.random() * placeholders.length)];
+
+        // --- CORE FUNCTIONS ---
         function getDims() { return { w: window.innerWidth - offsetLeft, h: window.innerHeight - offsetBottom }; }
         function dataToPos(h, l) {
             const dims = getDims();
             return { x: offsetLeft + ((h / 360) * dims.w), y: ((100 - l) / 100) * dims.h };
         }
 
-        // --- RENDER & GAME LOOP ---
         function render() {
             document.body.style.backgroundColor = `hsl(${hue}, ${sat}%, ${light}%)`;
             document.getElementById('val-hue').innerText = Math.round(hue);
@@ -214,11 +198,17 @@
         }
         requestAnimationFrame(updateLoop);
 
-        // --- EVENT LISTENERS ---
+        // --- INPUT HANDLING ---
         document.addEventListener('keydown', (e) => {
+            // BACKSPACE UNDO (Only if not typing in command bar)
+            if (e.key === 'Backspace' && document.activeElement !== cmdInput) {
+                undoStamp();
+                return;
+            }
             if (document.activeElement === cmdInput) return;
             if (keys.hasOwnProperty(e.code) || e.code === "Space") keys[e.code] = true;
         });
+
         document.addEventListener('keyup', (e) => {
             if (keys.hasOwnProperty(e.code) || e.code === "Space") keys[e.code] = false;
         });
@@ -232,7 +222,7 @@
             sat = e.deltaY > 0 ? Math.max(0, sat - 5) : Math.min(100, sat + 5);
         });
         document.addEventListener('click', (e) => {
-            if (e.target.closest('#command-bar') || e.target.closest('#export-btn')) return;
+            if (e.target.closest('#command-bar')) return;
             createStamp(hue, light, sat);
             const pos = dataToPos(hue, light);
             lastStampPos = { x: pos.x, y: pos.y };
@@ -242,17 +232,26 @@
         cmdInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const query = cmdInput.value.toLowerCase().trim();
+                const bar = document.getElementById('command-bar');
                 
+                // COMMANDS
                 if (query === 'clear' || query === 'reset') {
                     document.querySelectorAll('.stamp').forEach(el => el.remove());
+                    stampHistory.length = 0; // Clear history
                 } 
+                else if (query === 'export' || query === 'save' || query === 'copy') {
+                    exportColors();
+                }
+                else if (query === 'help') {
+                    alert("COMMANDS:\n\n'export' - Copy palette to clipboard\n'clear' - Reset screen\n[Backspace] - Undo last stamp\n\nTry typing a vibe like 'winter', 'forest', or 'neon'!");
+                }
+                // VIBES
                 else {
-                    const colors = getColorsFromVibe(query); // Check the Vibe Engine
+                    const colors = getColorsFromVibe(query); 
                     if (colors) {
                         playPalette(colors);
                     } else {
-                        // Error Buzzer
-                        const bar = document.getElementById('command-bar');
+                        // Error Buzzer (Red)
                         bar.style.backgroundColor = '#522';
                         setTimeout(() => bar.style.backgroundColor = '#000', 200);
                     }
@@ -260,35 +259,6 @@
                 cmdInput.value = ""; cmdInput.blur();
             }
         });
-
-        // --- EXPORT FUNCTIONALITY ---
-        function exportColors() {
-            const stamps = document.querySelectorAll('.stamp');
-            if (stamps.length === 0) {
-                alert("Nothing to export! Stamp some colors first.");
-                return;
-            }
-
-            let text = "My Color Palette:\n";
-            stamps.forEach((s, index) => {
-                // Get the computed background color (rgb)
-                const bg = s.style.backgroundColor; 
-                text += `Color ${index + 1}: ${bg}\n`;
-            });
-
-            navigator.clipboard.writeText(text).then(() => {
-                const btn = document.getElementById('export-btn');
-                const originalText = btn.innerText;
-                btn.innerText = "COPIED!";
-                btn.style.borderColor = "#00ffcc";
-                btn.style.color = "#00ffcc";
-                setTimeout(() => {
-                    btn.innerText = originalText;
-                    btn.style.borderColor = "#666";
-                    btn.style.color = "#fff";
-                }, 2000);
-            });
-        }
 
         // --- UTILS ---
         function createStamp(h, l, s) {
@@ -298,7 +268,42 @@
             stamp.style.left = pos.x + 'px'; stamp.style.top = pos.y + 'px';
             stamp.style.backgroundColor = `hsl(${h}, ${s}%, ${l}%)`;
             document.body.appendChild(stamp);
+            
+            // Add to history for Undo
+            stampHistory.push(stamp);
+            
             requestAnimationFrame(() => stamp.classList.add('pop'));
+        }
+
+        function undoStamp() {
+            if (stampHistory.length > 0) {
+                const last = stampHistory.pop();
+                last.remove();
+            }
+        }
+
+        function exportColors() {
+            if (stampHistory.length === 0) return;
+            
+            let text = "My Color Palette:\n";
+            stampHistory.forEach((s, index) => {
+                text += `Color ${index + 1}: ${s.style.backgroundColor}\n`;
+            });
+
+            navigator.clipboard.writeText(text).then(() => {
+                const bar = document.getElementById('command-bar');
+                const input = document.getElementById('cmd-input');
+                const originalPlaceholder = input.placeholder;
+                
+                // Visual success cue (Green Flash)
+                bar.style.backgroundColor = '#004433'; 
+                input.value = "COPIED TO CLIPBOARD!";
+                
+                setTimeout(() => {
+                    bar.style.backgroundColor = '#000';
+                    input.value = "";
+                }, 1500);
+            });
         }
 
         function playPalette(colors) {
@@ -317,7 +322,7 @@
                 setTimeout(() => {
                     createStamp(hue, light, sat);
                     i++;
-                    setTimeout(next, 200); // Faster stamping for vibes
+                    setTimeout(next, 200); 
                 }, 150);
             }
             hairX.style.transition = 'none'; hairY.style.transition = 'none';
