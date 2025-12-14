@@ -355,7 +355,6 @@
 
             // Global Esc Logic
             if (e.key === 'Escape') {
-                // If typing, blur input to return to canvas control
                 if (document.activeElement === cmdInput) {
                     cmdInput.blur();
                     return;
@@ -421,7 +420,7 @@
         // --- COMMAND BAR LOGIC ---
         cmdInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                e.stopPropagation(); // Stop bubbling so global handler doesn't auto-close help
+                e.stopPropagation(); // Stop bubbling
                 
                 const query = cmdInput.value.toLowerCase().trim();
                 const bar = document.getElementById('command-bar');
@@ -459,14 +458,18 @@
                     }
                 }
                 cmdInput.value = ""; 
-                // REMOVED cmdInput.blur() to allow rapid firing
+                // DO NOT BLUR here, keep focus for rapid fire
             }
         });
 
         // --- UTILS ---
         function toggleHelp() {
             modal.classList.toggle('open');
-            if(modal.classList.contains('open')) document.activeElement.blur();
+            if(modal.classList.contains('open')) {
+                document.activeElement.blur();
+            } else {
+                cmdInput.focus(); // Focus command bar when exiting help
+            }
         }
 
         function createStamp(h, l, s) {
