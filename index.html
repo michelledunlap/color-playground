@@ -4,114 +4,180 @@
     <style>
         body {
             margin: 0;
-            overflow: hidden; /* No scrollbars allowed */
-            font-family: sans-serif;
-            cursor: crosshair;
-            transition: background-color 0.1s ease; /* Smooth color shifting */
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace; /* Monospace for data feel */
+            cursor: none; /* Hide default cursor, we use crosshair */
+            background-color: #808080;
+            transition: background-color 0.05s linear;
         }
 
-        /* The floating label that tells you what you're doing */
+        /* The Grid: Helps you see that the screen is a chart */
+        .grid {
+            position: absolute;
+            width: 100vw;
+            height: 100vh;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px; /* The size of the grid squares */
+            pointer-events: none;
+        }
+
+        /* The HUD: Now shows live numbers to reinforce the connection */
         #hud {
             position: fixed;
             top: 20px;
             left: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ffcc; /* Sci-fi green */
             padding: 15px;
-            border-radius: 8px;
-            pointer-events: none; /* Let clicks pass through to the body */
-            user-select: none;
+            border-radius: 4px;
+            pointer-events: none;
+            z-index: 10;
         }
 
-        /* The "stamps" you create by clicking */
+        /* Custom Crosshair Cursor */
+        #cursor {
+            position: absolute;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+        }
+        /* The horizontal and vertical lines of the crosshair */
+        .hair-x { position: absolute; width: 100vw; height: 1px; background: rgba(255,255,255,0.5); left: -50vw; top: 0; }
+        .hair-y { position: absolute; width: 1px; height: 100vh; background: rgba(255,255,255,0.5); left: 0; top: -50vh; }
+
         .stamp {
             position: absolute;
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
-            border: 3px solid white;
+            border: 2px solid white;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            transform: translate(-50%, -50%); /* Center on cursor */
-            transition: transform 0.2s;
-        }
-
-        /* Animation when you create a stamp */
-        .stamp.pop {
-            transform: translate(-50%, -50%) scale(1.2);
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+            text-shadow: 0 1px 2px black;
         }
     </style>
 </head>
 <body>
 
+    <div class="grid"></div>
+
     <div id="hud">
-        <strong>Playground Mode</strong><br>
-        ↔ Move X: Hue <br>
-        ↕ Move Y: Lightness <br>
-        ⟳ Scroll: Saturation <br>
-        Click to Stamp
+        <strong>Color Chart Mode</strong><br><br>
+        ↔ X-Axis: HUE <span id="val-hue">0</span>°<br>
+        ↕ Y-Axis: LIGHT <span id="val-light">50</span>%<br>
+        ⟳ Scroll: SAT <span id="val-sat">100</span>%<br><br>
+        <em>Try Arrow Keys for precision!</em>
+    </div>
+
+    <div id="cursor">
+        <div class="hair-x"></div>
+        <div class="hair-y"></div>
     </div>
 
     <script>
-        // Default values
-        let hue = 0;        // 0-360
-        let sat = 100;      // 0-100%
-        let light = 50;     // 0-100%
+        // State
+        let hue = 180;
+        let sat = 100;
+        let light = 50;
+        
+        // Screen dimensions for mapping
+        let width = window.innerWidth;
+        let height = window.innerHeight;
 
-        // 1. LISTEN TO MOUSE MOVEMENT
-        document.addEventListener('mousemove', (e) => {
-            // Calculate % of screen width/height
-            const xPercent = e.clientX / window.innerWidth;
-            const yPercent = e.clientY / window.innerHeight;
+        const cursor = document.getElementById('cursor');
+        const displayHue = document.getElementById('val-hue');
+        const displayLight = document.getElementById('val-light');
+        const displaySat = document.getElementById('val-sat');
 
-            // Map X to Hue (0 to 360 degrees)
-            hue = Math.round(xPercent * 360);
+        // Update the visual state
+        function render() {
+            // Update Background
+            document.body.style.backgroundColor = `hsl(${hue}, ${sat}%, ${light}%)`;
+            
+            // Update Numbers
+            displayHue.innerText = hue;
+            displayLight.innerText = light;
+            displaySat.innerText = sat;
 
-            // Map Y to Lightness (100% at top, 0% at bottom)
-            // We invert it (1 - y) so "Up" is Light/White
-            light = Math.round((1 - yPercent) * 100);
-
-            updateColor();
-        });
-
-        // 2. LISTEN TO SCROLL (For Saturation)
-        document.addEventListener('wheel', (e) => {
-            // If scrolling down (positive delta), decrease saturation
-            if (e.deltaY > 0) sat -= 5;
-            else sat += 5;
-
-            // Clamp values between 0 and 100
-            if (sat > 100) sat = 100;
-            if (sat < 0) sat = 0;
-
-            updateColor();
-        });
-
-        // 3. UPDATE THE BACKGROUND
-        function updateColor() {
-            const colorString = `hsl(${hue}, ${sat}%, ${light}%)`;
-            document.body.style.backgroundColor = colorString;
+            // Move Crosshair to match the data
+            // We reverse-engineer the position from the values
+            // x = (hue / 360) * width
+            // y = ((100 - light) / 100) * height
+            const x = (hue / 360) * width;
+            const y = ((100 - light) / 100) * height;
+            
+            cursor.style.left = x + 'px';
+            cursor.style.top = y + 'px';
         }
+
+        // 1. MOUSE CONTROLS
+        document.addEventListener('mousemove', (e) => {
+            // Only update if we aren't using keyboard recently (optional, but keeps it simple)
+            const xPercent = e.clientX / width;
+            const yPercent = e.clientY / height;
+
+            hue = Math.round(xPercent * 360);
+            light = Math.round((1 - yPercent) * 100); // Invert Y so up is light
+            render();
+        });
+
+        // 2. SCROLL (Saturation)
+        document.addEventListener('wheel', (e) => {
+            if (e.deltaY > 0) sat = Math.max(0, sat - 5);
+            else sat = Math.min(100, sat + 5);
+            render();
+        });
+
+        // 3. KEYBOARD CONTROLS (The Arrow Keys!)
+        document.addEventListener('keydown', (e) => {
+            const step = 2; // How fast values change with keys
+
+            if (e.key === "ArrowRight") hue = (hue + step) % 360;
+            if (e.key === "ArrowLeft") hue = (hue - step + 360) % 360;
+            
+            if (e.key === "ArrowUp") light = Math.min(100, light + step);
+            if (e.key === "ArrowDown") light = Math.max(0, light - step);
+
+            render();
+        });
 
         // 4. CLICK TO STAMP
         document.addEventListener('click', (e) => {
             const stamp = document.createElement('div');
             stamp.classList.add('stamp');
             
-            // Set position to mouse click
-            stamp.style.left = e.clientX + 'px';
-            stamp.style.top = e.clientY + 'px';
-            
-            // Set color to current background color
+            // Calculate position based on current values
+            const x = (hue / 360) * width;
+            const y = ((100 - light) / 100) * height;
+
+            stamp.style.left = x + 'px';
+            stamp.style.top = y + 'px';
             stamp.style.backgroundColor = document.body.style.backgroundColor;
+            
+            // Optional: Label the stamp with its Hue?
+            // stamp.innerText = hue + "°"; 
 
             document.body.appendChild(stamp);
-
-            // Little pop animation
-            requestAnimationFrame(() => {
-                stamp.classList.add('pop');
-                setTimeout(() => stamp.classList.remove('pop'), 200);
-            });
         });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            render();
+        });
+
+        // Initial Render
+        render();
+
     </script>
 </body>
 </html>
