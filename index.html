@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <title>HSL Color Graph</title>
     <style>
         body {
             margin: 0; overflow: hidden;
@@ -119,9 +121,9 @@
                 <li><span class="key">Ctrl</span> + <span class="key">A</span> : Select All</li>
                 <li><span class="key">Del</span> : Delete Selected</li>
             </ul>
-            <p><strong>Commands:</strong> Type <span class="key">export</span>, <span class="key">missed</span>, or vibes like <span class="key">snake</span>, <span class="key">reef</span>, or <span class="key">house</span>.</p>
+            <p><strong>Commands:</strong> Type <span class="key">export</span>, <span class="key">missed</span>, or vibes like <span class="key">neon</span>, <span class="key">snake</span>, or <span class="key">reef</span>.</p>
             <p style="text-align: center; margin-top: 20px; font-size: 0.8em; color: #666;">
-                [Press Enter or Esc to close]
+                [Press Enter, Esc, or Backspace to close]
             </p>
         </div>
     </div>
@@ -204,7 +206,7 @@
         function getColorsFromVibe(rawTerm) {
             let term = rawTerm;
             
-            // 1. PLURAL HANDLER
+            // PLURAL HANDLER (Stemmer)
             if (term.endsWith('s') && !SYNONYMS[term]) {
                 const singular = term.slice(0, -1);
                 if (SYNONYMS[singular] || singular.match(/fish|shark|whale|dog|cat|bear|wolf|fox|synth|cyber|neon|pastel|xmas|christmas|halloween/)) {
@@ -214,7 +216,7 @@
 
             let category = SYNONYMS[term];
 
-            // 2. Fallback Logic
+            // Fallback Logic
             if (!category) {
                 if (term === 'starfish') category = 'starfish';
                 else if (term.match(/fish|shark|whale/)) category = 'water';
@@ -235,7 +237,6 @@
             };
 
             switch(category) {
-                // ... Existing ...
                 case 'forest': for(let i=0; i<count; i++) add(80, 150, 30, 70, 20, 50); break;
                 case 'water': for(let i=0; i<count; i++) add(170, 240, 50, 90, 40, 80); break;
                 case 'fire': for(let i=0; i<count; i++) add(0, 40, 70, 100, 40, 60); break;
@@ -260,16 +261,9 @@
                 case 'xmas': add(350, 360, 80, 100, 40, 60); add(120, 150, 60, 90, 30, 50); break;
                 case 'halloween': add(20, 40, 90, 100, 40, 60); add(270, 280, 60, 90, 20, 40); break;
                 
-                // NEW: STARFISH
                 case 'starfish': add(330, 360, 60, 90, 60, 80); add(10, 30, 70, 100, 50, 70); add(0, 15, 60, 80, 60, 80); break;
-
-                // NEW: REPTILE (Snake) - Greens, Browns, Earthy Yellows
                 case 'reptile': add(70, 140, 30, 60, 25, 45); add(30, 50, 40, 60, 30, 50); break;
-
-                // NEW: HOUSE (Architecture) - Brick Red, Concrete Grey, Warm White
                 case 'house': add(0, 20, 30, 50, 40, 60); add(200, 220, 0, 10, 50, 80); add(30, 50, 20, 40, 80, 95); break;
-
-                // NEW: CORAL (Reef) - Pink, Orange, Teal
                 case 'coral': add(320, 350, 70, 100, 50, 70); add(10, 30, 80, 100, 50, 70); add(170, 190, 60, 90, 40, 60); break;
 
                 default: return null;
@@ -341,6 +335,7 @@
         document.addEventListener('keydown', (e) => {
             const cmd = e.metaKey || e.ctrlKey;
             
+            // Shortcuts
             if (cmd && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undoStamp(); return; }
             if ((cmd && e.shiftKey && e.key === 'z') || (cmd && e.key === 'y')) { e.preventDefault(); redoStamp(); return; }
             if (cmd && e.key === 'a') {
@@ -349,15 +344,23 @@
                 return;
             }
             if (e.key === '?' && document.activeElement !== cmdInput) { toggleHelp(); return; }
-            if (e.key === 'Escape') {
-                if (modal.classList.contains('open')) toggleHelp();
-                else document.querySelectorAll('.stamp.selected').forEach(s => s.classList.remove('selected'));
+            
+            // Modal Logic (Enter/Esc/Delete/Backspace to Close)
+            if (modal.classList.contains('open')) {
+                if (['Enter', 'Escape', 'Backspace', 'Delete'].includes(e.key)) {
+                    toggleHelp();
+                }
                 return;
             }
-            if (e.key === 'Enter' && modal.classList.contains('open')) { toggleHelp(); return; }
+
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.stamp.selected').forEach(s => s.classList.remove('selected'));
+                return;
+            }
 
             if (document.activeElement === cmdInput) return;
 
+            // Deletion
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 const selected = document.querySelectorAll('.stamp.selected');
                 if (selected.length > 0) {
@@ -412,6 +415,8 @@
         // --- COMMAND BAR LOGIC ---
         cmdInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
+                e.stopPropagation(); // FIXED: Stop event from bubbling to global handler
+                
                 const query = cmdInput.value.toLowerCase().trim();
                 const bar = document.getElementById('command-bar');
                 
@@ -439,12 +444,10 @@
                     if (colors) {
                         playPalette(colors);
                     } else {
-                        // SAVE MISSED TERM
                         if (!missedTerms.includes(query)) {
                             missedTerms.push(query);
-                            console.log("Missed:", query); // Log to console too
+                            console.log("Missed term logged:", query);
                         }
-                        
                         bar.style.backgroundColor = '#522';
                         setTimeout(() => bar.style.backgroundColor = '#000', 200);
                     }
@@ -456,7 +459,6 @@
         // --- UTILS ---
         function toggleHelp() {
             modal.classList.toggle('open');
-            // Reset focus so we don't accidentally type in command bar
             if(modal.classList.contains('open')) document.activeElement.blur();
         }
 
